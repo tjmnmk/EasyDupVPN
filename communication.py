@@ -200,8 +200,11 @@ class UDP:
         if self._peer_host is None or self._peer_port is None:
             loguru.logger.debug("Peer address or port is not learned yet, not sending packet")
             return
-        self._sock.sendto(packet_data, (self._peer_host, self._peer_port))
-
+        try:
+            self._sock.sendto(packet_data, (self._peer_host, self._peer_port))
+        except Exception as e:
+            loguru.logger.error(f"Failed to send UDP packet: {e}")
+            
     def fileno(self):
         return self._sock.fileno()
     

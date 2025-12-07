@@ -63,7 +63,17 @@ class Tun():
     
     def tun_write(self, data):
         loguru.logger.debug(f"Writing {len(data)} bytes to TUN device")
-        return self._tun.write(data)
+        try:
+            return self._tun.write(data)
+        except BlockingIOError:
+            loguru.logger.debug("No space available to write (EAGAIN), data not written")
+            return None
+        except OSError as e:
+            if e.errno == 22:  # EINVAL
+                loguru.logger.error("Invalid data provided to TUN device (EINVAL), data not written, is compression enabled on both sides?")
+                return None
+            loguru.logger.error(f"Error writing to TUN device: {e}")
+            return None
     
     def _close(self):
         loguru.logger.debug("Closing TUN device")
