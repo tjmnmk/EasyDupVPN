@@ -4,6 +4,7 @@ import random
 import time
 import os
 import struct
+import sh
 
 import config
 import const
@@ -177,6 +178,8 @@ class Communication:
         self._send_extra_delayed_packet = bool(config.Config().get_send_extra_delayed_packet_after())
         self._delayed_packet_sender = DelayedPacketSender(self._udp)
 
+        self._last_keepalive_time = time.monotonic()
+
     def check_delayed_packets(self):
         if self._send_extra_delayed_packet:
             self._delayed_packet_sender.send_delayed_packets()
@@ -293,6 +296,17 @@ class Communication:
     
     def fileno(self):
         return self._udp.fileno()
+    
+    def keepalive_ping(self):
+        keepalive_interval = config.Config().get_keep_alive_interval_seconds()
+        current_time = time.monotonic()
+
+        if self._last_keepalive_time + keepalive_interval > current_time:
+            return
+
+        loguru.logger.debug("Sending keepalive ping")
+        self._udp.udp_write(b'')  # send empty packet as keepalive
+        self._last_keepalive_time = current_time
         
 
 class UDP:
@@ -372,4 +386,3 @@ class UDP:
 
     def fileno(self):
         return self._sock.fileno()
-    

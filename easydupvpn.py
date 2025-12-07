@@ -60,6 +60,7 @@ class MainWorker:
             
             # Always check for delayed packets to send
             self.communication_i.check_delayed_packets()
+            self.communication_i.keepalive_ping()
 
             if tun_fd in selectable:
                 data = self.tun_i.tun_read()

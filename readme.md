@@ -108,6 +108,7 @@ cp config.example.json config.json
 | `ADD_ROUTES_PEER_IPV6` | IPv6 TUN address of the peer (gateway for ADD_ROUTES) |
 | `RUN_COMMAND_AFTER_TUN_READY` | Shell command to execute after TUN device is ready (e.g., firewall rules, DNS changes). **⚠️ Runs as root** (default: "") |
 | `RUN_COMMAND_ON_EXIT` | Shell command to execute on exit (e.g., restore firewall, DNS). **⚠️ Runs as root** (default: "") |
+| `KEEP_ALIVE_INTERVAL_SECONDS` | Interval in seconds to send keep-alive packets. Set to 0 to disable. One-way keep-alive from this peer to the other (default: 0) |
 
 ### PEER_LEARN Modes
 
@@ -170,7 +171,8 @@ sudo python3 easydupvpn.py config.json
   "ADD_ROUTES_PEER_IPV4": "10.0.0.2",
   "ADD_ROUTES_PEER_IPV6": "fd00::2",
   "RUN_COMMAND_AFTER_TUN_READY": "",
-  "RUN_COMMAND_ON_EXIT": ""
+  "RUN_COMMAND_ON_EXIT": "",
+  "KEEP_ALIVE_INTERVAL_SECONDS": 5
 }
 ```
 
@@ -202,7 +204,8 @@ sudo python3 easydupvpn.py config.json
   "ADD_ROUTES_PEER_IPV4": "10.0.0.1",
   "ADD_ROUTES_PEER_IPV6": "fd00::1",
   "RUN_COMMAND_AFTER_TUN_READY": "",
-  "RUN_COMMAND_ON_EXIT": ""
+  "RUN_COMMAND_ON_EXIT": "",
+  "KEEP_ALIVE_INTERVAL_SECONDS": 5
 }
 ```
 

@@ -57,5 +57,9 @@
                                             "Use with CAUTION - command is run as root."],
   "RUN_COMMAND_ON_EXIT": "",
   "_comment_RUN_COMMAND_ON_EXIT": [ "Command to run on exit (e.g., to restore firewall, or resolv.conf)",
-                                   "Use with CAUTION - command is run as root."]
+                                   "Use with CAUTION - command is run as root."],
+  "KEEP_ALIVE_INTERVAL_SECONDS": 5,
+  "_comment_KEEP_ALIVE_INTERVAL_SECONDS": [ "Interval in seconds to send keep-alive packets, 0 to disable keep-alive packets",
+                                            "It's only one way keep-alive from this peer to the other peer",
+                                            "Check also KEEP_ALIVE_TIMEOUT_SECONDS on the other peer" ]
 }

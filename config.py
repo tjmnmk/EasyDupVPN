@@ -245,7 +245,7 @@ class Config:
             if key not in const.CONFIG_KNOWN_VALUES and not key.startswith(const.CONFIG_COMMENTS_PREFIXES):
                 loguru.logger.warning(f"Unknown configuration key: {key}")
 
-    def _get_value(self, config_key, default=None, required=False, log_level="info"):
+    def _get_value(self, config_key, default=None, required=False):
         try:
             value = self._settings[config_key]
             return value
@@ -254,10 +254,7 @@ class Config:
                 loguru.logger.error(f"{config_key} not set in configuration")
                 raise exceptions.ConfigError(f"{config_key} not set in configuration")
             else:
-                if log_level == "info":
-                    loguru.logger.info(f"{config_key} not set in configuration, using default {default}")
-                elif log_level == "warning":
-                    loguru.logger.warning(f"{config_key} not set in configuration")
+                loguru.logger.debug(f"{config_key} not set in configuration, using default {default}")
                 return default
 
     def _get_ip_address(self, config_key):
@@ -332,7 +329,7 @@ class Config:
         if self.get_tun_address_ipv4() is None:
             return None
         
-        netmask = self._get_value("TUN_NETMASK_IPV4", default=None, log_level="warning")
+        netmask = self._get_value("TUN_NETMASK_IPV4", default=None)
         if netmask is None:
             return None
 
@@ -346,7 +343,7 @@ class Config:
         if self.get_tun_address_ipv6() is None:
             return None
         
-        netmask = self._get_value("TUN_NETMASK_IPV6", default=None, log_level="warning")
+        netmask = self._get_value("TUN_NETMASK_IPV6", default=None)
         if netmask is None:
             return None
 
@@ -453,7 +450,7 @@ class Config:
         return learn_peer
     
     def get_protocol_header(self):
-        protocol_header = self._get_value("PROTOCOL_HEADER", default=True, log_level="info")
+        protocol_header = self._get_value("PROTOCOL_HEADER", default=True)
 
         if not ConfigChecks.validate_bool(protocol_header):
             loguru.logger.error("PROTOCOL_HEADER must be a boolean (true/false)")
@@ -462,7 +459,7 @@ class Config:
         return protocol_header
     
     def get_compression(self):
-        compression = self._get_value("COMPRESSION", default=False, log_level="info")
+        compression = self._get_value("COMPRESSION", default=False)
 
         if not ConfigChecks.validate_bool(compression):
             loguru.logger.error("COMPRESSION must be a boolean (true/false)")
@@ -471,7 +468,7 @@ class Config:
         return compression
     
     def get_default_route(self):
-        default_route = self._get_value("DEFAULT_ROUTE", default=False, log_level="info")
+        default_route = self._get_value("DEFAULT_ROUTE", default=False)
 
         if not ConfigChecks.validate_bool(default_route):
             loguru.logger.error("DEFAULT_ROUTE must be a boolean (true/false)")
@@ -498,7 +495,7 @@ class Config:
         return routes
     
     def get_add_routes_peer_ipv4(self):
-        peer_tun_ipv4 = self._get_value("ADD_ROUTES_PEER_IPV4", default=None, log_level="info")
+        peer_tun_ipv4 = self._get_value("ADD_ROUTES_PEER_IPV4", default=None)
         if not peer_tun_ipv4 and len(self.get_routes()) == 0 and not self.get_default_route():
             return None
 
@@ -509,7 +506,7 @@ class Config:
         return peer_tun_ipv4
     
     def get_add_routes_peer_ipv6(self):
-        peer_tun_ipv6 = self._get_value("ADD_ROUTES_PEER_IPV6", default=None, log_level="info")
+        peer_tun_ipv6 = self._get_value("ADD_ROUTES_PEER_IPV6", default=None)
         if not peer_tun_ipv6 and len(self.get_routes()) == 0 and not self.get_default_route():
             return None
 
@@ -520,7 +517,7 @@ class Config:
         return peer_tun_ipv6
 
     def get_vpn_data_max_size_split(self):
-        max_size = self._get_value("VPN_DATA_MAX_SIZE_SPLIT", default=0, log_level="info")
+        max_size = self._get_value("VPN_DATA_MAX_SIZE_SPLIT", default=0)
 
         if not ConfigChecks.validate_vpn_data_max_size_split(max_size):
             loguru.logger.error("Invalid VPN_DATA_MAX_SIZE_SPLIT in configuration")
@@ -529,7 +526,7 @@ class Config:
         return max_size
     
     def get_send_extra_delayed_packet_after(self):
-        delay = self._get_value("SEND_EXTRA_DELAYED_PACKET_AFTER", default=0.0, log_level="info")
+        delay = self._get_value("SEND_EXTRA_DELAYED_PACKET_AFTER", default=0.0)
 
         if not isinstance(delay, (int, float)):
             loguru.logger.error("SEND_EXTRA_DELAYED_PACKET_AFTER must be a number (int or float)")
@@ -542,7 +539,7 @@ class Config:
         return float(delay)
     
     def get_run_command_after_tun_ready(self):
-        command = self._get_value("RUN_COMMAND_AFTER_TUN_READY", default="", log_level="info")
+        command = self._get_value("RUN_COMMAND_AFTER_TUN_READY", default="")
         if not isinstance(command, str):
             loguru.logger.error("RUN_COMMAND_AFTER_TUN_READY must be a string")
             raise exceptions.ConfigError("RUN_COMMAND_AFTER_TUN_READY must be a string")
@@ -550,7 +547,7 @@ class Config:
         return command.strip()
     
     def get_run_command_on_exit(self):
-        command = self._get_value("RUN_COMMAND_ON_EXIT", default="", log_level="info")
+        command = self._get_value("RUN_COMMAND_ON_EXIT", default="")
         if not isinstance(command, str):
             loguru.logger.error("RUN_COMMAND_ON_EXIT must be a string")
             raise exceptions.ConfigError("RUN_COMMAND_ON_EXIT must be a string")
@@ -559,3 +556,16 @@ class Config:
         if not command:
             return None
         return command
+    
+    def get_keep_alive_interval_seconds(self):
+        interval = self._get_value("KEEP_ALIVE_INTERVAL_SECONDS", default=5)
+
+        if not isinstance(interval, int):
+            loguru.logger.error("KEEP_ALIVE_INTERVAL_SECONDS must be an integer")
+            raise exceptions.ConfigError("KEEP_ALIVE_INTERVAL_SECONDS must be an integer")
+        
+        if interval < 1 or interval > 3600:
+            loguru.logger.error("KEEP_ALIVE_INTERVAL_SECONDS must be between 1 and 3600 seconds")
+            raise exceptions.ConfigError("KEEP_ALIVE_INTERVAL_SECONDS must be between 1 and 3600 seconds")
+        
+        return interval
