@@ -5,7 +5,7 @@ import time
 
 import config
 import const
-
+import crypto
 
 class NonceSet:
     def __init__(self):
@@ -34,7 +34,7 @@ class DeduplicationManager:
     def __init__(self):
         self._set1 = NonceSet()
         self._set2 = NonceSet()
-        self._ttl = config.get_deduplication_ttl_seconds()
+        self._ttl = config.Config().get_deduplication_ttl_seconds()
 
         self._new_set = self._set1
         self._iterations_of_clear_check = 0
@@ -43,7 +43,7 @@ class DeduplicationManager:
         self._iterations_of_clear_check += 1
         if self._iterations_of_clear_check < 1000:
             return
-        ttl = config.get_deduplication_ttl_seconds()
+        ttl = config.Config().get_deduplication_ttl_seconds()
 
         # we need to check if both sets are older than ttl, if so, clear the older one
         if self._set1.get_age() > ttl and self._set2.get_age() > ttl:
@@ -73,7 +73,8 @@ class DeduplicationManager:
 class Communication:
     def __init__(self):
         self._udp = UDP()
-        self._number_of_duplicates = config.get_number_of_duplicates()
+        self._number_of_duplicates = config.Config().get_number_of_duplicates()
+        self._crypto = crypto.Crypto()
 
         self._deduplication_manager = DeduplicationManager()
 
@@ -84,6 +85,7 @@ class Communication:
         return header
 
     def send_packet(self, data):
+        encrypted_data = self._crypto.encrypt(data)
         for _ in range(self._number_of_duplicates):
             packet_data = self.create_header() + data
             self._udp.udp_write(packet_data)
@@ -104,32 +106,35 @@ class Communication:
         if not self._deduplication_manager.nonce(deduplication_nonce):
             return None
         
+        data = self._crypto.decrypt(data)
         return data
         
 
 class UDP:
     def __init__(self):
+        self._host = config.Config().get_listen_address()
+        self._port = config.Config().get_listen_port()
+        self._peer_host = config.Config().get_peer_address()
+        self._peer_port = config.Config().get_peer_port()
         sock = self._udp_open()
         sock.setblocking(False)
-
-        self._host = config.get_listen_address()
-        self._port = config.get_listen_port()
-        self._peer_host = config.get_peer_address()
-        self._peer_port = config.get_peer_port()
-        self._udp_size = config.get_udp_mtu()
         self._sock = sock
 
     def _udp_open(self):
         loguru.logger.info(f"Opening UDP socket on {self._host}:{self._port}")
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.bind((self._host, self._port))
         return sock
     
     def udp_read(self):
-        loguru.logger.debug("Reading from UDP socket")
-
-        data, address = self._sock.recvfrom(9000) # TODO: variable buffer size
+        try:
+            data, address = self._sock.recvfrom(9000) # TODO: variable buffer size
+        except BlockingIOError:
+            return None  # No data available
+        
         loguru.logger.debug(f"Read {len(data)} bytes from UDP socket from {address}")
         if address != (self._peer_host, self._peer_port):
             loguru.logger.warning(f"Received UDP packet from unexpected address {address}, expected {(self._peer_host, self._peer_port)}, discarding")

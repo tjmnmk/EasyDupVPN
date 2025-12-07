@@ -5,7 +5,7 @@
   "TUN_NETMASK_IPV6": 64,
   "PEER_ADDRESS": "192.168.1.100",
   "LISTEN_ADDRESS": "0.0.0.0",
-  "TUN_DEVICE_NAME": "tun0",
+  "TUN_DEVICE_NAME": "tun-edv0",
   "MTU": 1280,
   "_comment_MTU": "Recommended to set 220 bytes lower than the MTU of the underlying network (e.g., for standard Ethernet 1500 use 1300)",
   "ENCRYPTION_KEY": "changeme",
@@ -13,5 +13,7 @@
   "DEDUPLICATION_TTL_SECONDS": 60,
   "_comment_DEDUPLICATION_TTL_SECONDS": "Time in seconds to remember seen nonces for deduplication purposes",
   "NUMBER_OF_DUPLICATES": 3,
-  "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet"
+  "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet",
+  "PEER_PORT": 8111,
+  "LISTEN_PORT": 8111
 }

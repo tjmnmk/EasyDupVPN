@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import sys
 import loguru
 import time
@@ -9,25 +11,25 @@ import tun
 
 class MainWorker:
     def __init__(self):
-        communication = communication.Communication()
-        tun = tun.Tun()
-
-    def run(self):
+        self.communication_i = communication.Communication()
+        self.tun_i = tun.Tun()
+        
+    def run(self):   
         continue_fast = True
         while True:
             if not continue_fast:
                 time.sleep(0.0001) # 100 us
             continue_fast = False
 
-            data = tun.tun_read()
+            data = self.tun_i.tun_read()
             if data:
                 continue_fast = True
-                communication.send_data(data)
+                self.communication_i.send_packet(data)
 
-            data = communication.receive_data()
+            data = self.communication_i.receive_packet()
             if data:
                 continue_fast = True
-                tun.tun_write(data)
+                self.tun_i.tun_write(data)
 
 def main():
     try:
@@ -36,6 +38,7 @@ def main():
         loguru.logger.error("Configuration file path not provided")
         sys.exit(1)
 
+    config.Config().load_from_file(config_file)
     MainWorker().run()
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import re
 
 import const
 import exceptions
+from singleton import singleton
 
 class ConfigChecks:
     @staticmethod
@@ -141,12 +142,16 @@ class ConfigChecks:
         return True
         
 
+@singleton
 class Config:
-    def __init__(self, config_file):
+    def __init__(self):
+        self._settings = {}
+
+    def load_from_file(self, config_file):
         loguru.logger.info(f"Loading configuration from {config_file}")
 
         try:
-            self._setting = json.load(open(config_file, 'r'))
+            self._settings = json.load(open(config_file, 'r'))
         except Exception as e:
             loguru.logger.error(f"Failed to load configuration file: {e}")
             raise exceptions.ConfigError("Failed to load configuration file")
@@ -165,14 +170,14 @@ class Config:
         self.get_device_name()
 
     def _check_for_unknown_settings(self):
-        for key in self._setting.keys():
+        for key in self._settings.keys():
             if key not in const.CONFIG_KNOWN_VALUES and not key.startswith(const.CONFIG_COMMENTS_PREFIXES):
                 loguru.logger.error(f"Unknown configuration key: {key}")
             raise exceptions.ConfigError(f"Unknown configuration key: {key}")
 
     def _get_value(self, config_key, default=None, required=False, log_level="info"):
         try:
-            value = self._setting[config_key]
+            value = self._settings[config_key]
             return value
         except KeyError:
             if required:
@@ -187,7 +192,7 @@ class Config:
 
     def _get_ip_address(self, config_key):
         try:
-            ip_addres = self._setting[config_key]
+            ip_addres = self._settings[config_key]
         except KeyError:
             loguru.logger.warning(f"{config_key} not set in configuration")
             return None
@@ -198,7 +203,7 @@ class Config:
         
     def _get_ipv4_address(self, config_key):
         try:
-            ip_address = self._setting[config_key]
+            ip_address = self._settings[config_key]
         except KeyError:
             loguru.logger.warning(f"{config_key} not set in configuration")
             return None
@@ -211,7 +216,7 @@ class Config:
 
     def _get_ipv6_address(self, config_key):
         try:
-            ipv6_address = self._setting[config_key]
+            ipv6_address = self._settings[config_key]
         except KeyError:
             loguru.logger.warning(f"{config_key} not set in configuration")
             return None
@@ -232,7 +237,7 @@ class Config:
     def get_mtu(self):
         mtu = self._get_value("MTU", required=True)
 
-        if "IPV6_ADDRESS" in self._setting:
+        if "IPV6_ADDRESS" in self._settings:
             mtu_check = ConfigChecks.ipv6_mtu
         else:
             mtu_check = ConfigChecks.mtu_valid
@@ -307,7 +312,7 @@ class Config:
         return device_name
     
     def get_number_of_duplicates(self):
-        num = self._get_value("NUMBER_OF_DUPLICATES", default=1, log_level="info")
+        num = self._get_value("NUMBER_OF_DUPLICATES", required=True)
         
         if not ConfigChecks.validate_number_of_duplicates(num):
             loguru.logger.error("Invalid NUMBER_OF_DUPLICATES in configuration")
@@ -316,10 +321,28 @@ class Config:
         return num
     
     def get_deduplication_ttl_seconds(self):
-        ttl = self._get_value("DEDUPLICATION_TTL_SECONDS", default=60, log_level="info")
+        ttl = self._get_value("DEDUPLICATION_TTL_SECONDS", required=True)
 
         if not ConfigChecks.validate_deduplication_ttl_seconds(ttl):
             loguru.logger.error("Invalid DEDUPLICATION_TTL_SECONDS in configuration")
             raise exceptions.ConfigError("Invalid DEDUPLICATION_TTL_SECONDS in configuration")
         
         return ttl
+    
+    def get_listen_port(self):
+        listen_port = self._get_value("LISTEN_PORT", required=True)
+        
+        if not ConfigChecks.check_port_valid(listen_port):
+            loguru.logger.error("Invalid LISTEN_PORT in configuration")
+            raise exceptions.ConfigError("Invalid LISTEN_PORT in configuration")
+        
+        return listen_port
+    
+    def get_peer_port(self):
+        peer_port = self._get_value("PEER_PORT", required=True)
+        
+        if not ConfigChecks.check_port_valid(peer_port):
+            loguru.logger.error("Invalid PEER_PORT in configuration")
+            raise exceptions.ConfigError("Invalid PEER_PORT in configuration")
+        
+        return peer_port
