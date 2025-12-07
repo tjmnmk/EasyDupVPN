@@ -162,6 +162,17 @@ class ConfigChecks:
             return False
         
         return True
+    
+    @staticmethod
+    def validate_peer_learn(value):
+        valid_values = ["off", "learn", "dynamic"]
+        if not isinstance(value, str):
+            loguru.logger.error(f"PEER_LEARN must be a string, got {type(value).__name__}")
+            return False
+        if value not in valid_values:
+            return False
+        
+        return True
         
 
 @singleton
@@ -190,6 +201,13 @@ class Config:
         self.get_peer_address()
         self.get_listen_address()
         self.get_device_name()
+        self.get_nice_level()
+        self.get_number_of_duplicates()
+        self.get_deduplication_ttl_seconds()
+        self.get_listen_port()
+        self.get_peer_port()
+        self.get_log_level()
+        self.get_learn_peer()
 
     def _check_for_unknown_settings(self):
         for key in self._settings.keys():
@@ -309,6 +327,10 @@ class Config:
         return netmask
     
     def get_peer_address(self):
+        if self.get_learn_peer() in ["learn", "dynamic"]:
+            loguru.logger.info("PEER_LEARN is enabled, ignoring PEER_ADDRESS value")
+            return None
+        
         peer_address = self._get_ip_address("PEER_ADDRESS")
         if not peer_address:
             loguru.logger.error("PEER_ADDRESS not set in configuration")
@@ -351,7 +373,7 @@ class Config:
         
         return ttl
     
-    def get_listen_port(self):
+    def get_listen_port(self):       
         listen_port = self._get_value("LISTEN_PORT", required=True)
         
         if not ConfigChecks.check_port_valid(listen_port):
@@ -361,6 +383,10 @@ class Config:
         return listen_port
     
     def get_peer_port(self):
+        if self.get_learn_peer() in ["learn", "dynamic"]:
+            loguru.logger.info("PEER_LEARN is enabled, ignoring LISTEN_PORT value")
+            return None
+        
         peer_port = self._get_value("PEER_PORT", required=True)
         
         if not ConfigChecks.check_port_valid(peer_port):
@@ -386,3 +412,12 @@ class Config:
             raise exceptions.ConfigError("Invalid NICE_LEVEL in configuration")
         
         return nice_level
+       
+    def get_learn_peer(self):
+        learn_peer = self._get_value("PEER_LEARN", required=True).lower()
+
+        if not ConfigChecks.validate_peer_learn(learn_peer):
+            loguru.logger.error("Invalid PEER_LEARN in configuration")
+            raise exceptions.ConfigError("Invalid PEER_LEARN in configuration")
+        
+        return learn_peer

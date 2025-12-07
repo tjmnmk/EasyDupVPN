@@ -126,6 +126,7 @@ class UDP:
         self._port = config.Config().get_listen_port()
         self._peer_host = config.Config().get_peer_address()
         self._peer_port = config.Config().get_peer_port()
+        self._peer_dynamic = config.Config().get_peer_dynamic()
         sock = self._udp_open()
         sock.setblocking(False)
         self._sock = sock
@@ -145,14 +146,27 @@ class UDP:
         except BlockingIOError:
             return None  # No data available
         loguru.logger.debug(f"Read {len(data)} bytes from UDP socket from {address}")
-        if address != (self._peer_host, self._peer_port):
-            loguru.logger.warning(f"Received UDP packet from unexpected address {address}, expected {(self._peer_host, self._peer_port)}, discarding")
-            return None
+
+        if self._peer_dynamic == "off":
+            if address != (self._peer_host, self._peer_port):
+                loguru.logger.warning(f"Received UDP packet from unexpected address {address}, expected {(self._peer_host, self._peer_port)}, discarding")
+                return None
+        elif self._peer_dynamic in ["learn"]:
+            loguru.logger.info(f"Learning peer address as {address}")
+            self._peer_host, self._peer_port = address
+            self._peer_dynamic = "off"  # disable further learning
+        elif self._peer_dynamic == "dynamic":
+            if address != (self._peer_host, self._peer_port):
+                loguru.logger.info(f"Relearning peer address as {address}")
+                self._peer_host, self._peer_port = address
 
         return data
     
     def udp_write(self, packet_data):
         loguru.logger.debug(f"Writing {len(packet_data)} bytes to UDP socket to {(self._peer_host, self._peer_port)}")
+        if self._peer_host is None or self._peer_port is None:
+            loguru.logger.debug("Peer address or port is not learned yet, not sending packet")
+            return
         self._sock.sendto(packet_data, (self._peer_host, self._peer_port))
 
     def fileno(self):
