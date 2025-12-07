@@ -222,6 +222,96 @@ sudo python3 easydupvpn.py config.json
 9. Split packets are reassembled after decryption (with 15-second timeout for incomplete packets)
 10. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
 
+## Troubleshooting
+
+### Configuration Compatibility
+
+In case of connection issues, verify that both peers have the following configuration options set **identically**:
+
+- `PROTOCOL_HEADER` - Both peers must use the same value (true/false)
+- `COMPRESSION` - Both peers must use the same value (true/false)
+- `VPN_DATA_MAX_SIZE_SPLIT` - If enabled on one peer, must be enabled on the other (values can differ)
+
+### System Configuration
+
+**Note:** IP forwarding is only required if you want to route traffic through the VPN (e.g., using `DEFAULT_ROUTE` or `ADD_ROUTES`). For simple point-to-point communication between peers, IP forwarding is not necessary.
+
+Check your system settings:
+
+```bash
+# Enable IP forwarding for IPv4
+sudo sysctl -w net.ipv4.ip_forward=1
+
+# Enable IP forwarding for IPv6
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+
+# Make changes persistent across reboots
+echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
+echo "net.ipv6.conf.all.forwarding=1" | sudo tee -a /etc/sysctl.conf
+```
+
+### Firewall Configuration
+
+Ensure your firewall allows UDP traffic on the configured port:
+
+```bash
+# For ufw
+sudo ufw allow 8111/udp
+
+# For firewalld
+sudo firewall-cmd --permanent --add-port=8111/udp
+sudo firewall-cmd --reload
+
+# For iptables
+sudo iptables -A INPUT -p udp --dport 8111 -j ACCEPT
+sudo iptables -A OUTPUT -p udp --sport 8111 -j ACCEPT
+```
+
+**Additional requirements for routing (`DEFAULT_ROUTE` or `ADD_ROUTES`):**
+
+If you're routing traffic through the VPN, you also need to:
+
+1. **Allow forwarding between interfaces:**
+```bash
+# For iptables
+sudo iptables -A FORWARD -i tun-edv0 -j ACCEPT
+sudo iptables -A FORWARD -o tun-edv0 -j ACCEPT
+```
+
+2. **Enable masquerading/NAT (if routing to internet):**
+```bash
+# Replace eth0 with your internet-facing interface
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+```
+
+**For point-to-point communication only:**
+
+Ensure traffic on the TUN interface is not blocked.
+
+### MTU Issues
+
+If you experience packet loss or connection problems:
+
+1. Check your network's MTU: `ip link show`
+2. Set VPN MTU 130 bytes lower than network MTU
+3. Alternatively, enable packet splitting with `VPN_DATA_MAX_SIZE_SPLIT`.
+
+Example for standard 1500 MTU network:
+```json
+{
+  "MTU": 1370,
+  "VPN_DATA_MAX_SIZE_SPLIT": 0
+}
+```
+
+Example if you need 1500 MTU on VPN TUN itself (requires packet splitting):
+```json
+{
+  "MTU": 1500,
+  "VPN_DATA_MAX_SIZE_SPLIT": 1000
+}
+```
+
 ## Running as a Service
 
 A systemd service file is included for running EasyDupVPN as a system service.
