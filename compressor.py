@@ -19,5 +19,5 @@ class Compressor:
         try:
             return zlib.decompress(data)
         except Exception as e:
-            loguru.logger.error(f"Decompression failed, is compression enabled on both sides? {e}")
+            loguru.logger.error(f"Decompression failed, is compression / packet splitting enabled on both sides? {e}")
             return None

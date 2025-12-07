@@ -138,7 +138,7 @@ class Tun():
             return None
         except OSError as e:
             if e.errno == 22:  # EINVAL
-                loguru.logger.error("Invalid data provided to TUN device (EINVAL), data not written, is compression enabled on both sides?")
+                loguru.logger.error("Invalid data provided to TUN device (EINVAL), data not written, is compression / packet splitting enabled on both sides?")
                 return None
             loguru.logger.error(f"Error writing to TUN device: {e}")
             return None
