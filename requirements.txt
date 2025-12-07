@@ -2,3 +2,4 @@ loguru
 sh
 PyNaCl
 psutil
+brotli

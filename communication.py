@@ -6,6 +6,7 @@ import time
 import config
 import const
 import crypto
+import compressor
 
 class NonceSet:
     def __init__(self):
@@ -79,6 +80,8 @@ class Communication:
         self._number_of_duplicates = config.Config().get_number_of_duplicates()
         self._crypto = crypto.Crypto()
         self._protocol_header = config.Config().get_protocol_header()
+        self._compression_enabled = config.Config().get_compression()
+        self._compression_i = compressor.Compressor()
 
         self._deduplication_manager = DeduplicationManager()
 
@@ -92,6 +95,11 @@ class Communication:
         return header
 
     def send_packet(self, data):
+        if self._compression_enabled:
+            original_length = len(data)
+            data = self._compression_i.compress(data)
+            loguru.logger.debug(f"Compressed data length: {len(data)}; original length: {original_length}")
+            
         encrypted_data = self._crypto.encrypt(data)
         packet_data = self.create_header() + encrypted_data
         for _ in range(self._number_of_duplicates):
@@ -122,6 +130,10 @@ class Communication:
         
         loguru.logger.debug(f"Decrypted UDP packet of length {len(data)}")
         self._udp.learn_peer(address, port)
+        if self._compression_enabled:
+            original_length = len(data)
+            data = self._compression_i.decompress(data)
+            loguru.logger.debug(f"Decompressed data length: {len(data)}; original length: {original_length}")
         return data
     
     def fileno(self):

@@ -173,6 +173,14 @@ class ConfigChecks:
             return False
         
         return True
+    
+    @staticmethod
+    def validate_bool(value):
+        if not isinstance(value, bool):
+            loguru.logger.error(f"Value must be a boolean, got {type(value).__name__}")
+            return False
+        
+        return True
         
 
 @singleton
@@ -425,8 +433,17 @@ class Config:
     def get_protocol_header(self):
         protocol_header = self._get_value("PROTOCOL_HEADER", default=True, log_level="info")
 
-        if not isinstance(protocol_header, bool):
+        if not ConfigChecks.validate_bool(protocol_header):
             loguru.logger.error("PROTOCOL_HEADER must be a boolean (true/false)")
             raise exceptions.ConfigError("PROTOCOL_HEADER must be a boolean (true/false)")
         
         return protocol_header
+    
+    def get_compression(self):
+        compression = self._get_value("COMPRESSION", default=False, log_level="info")
+
+        if not ConfigChecks.validate_bool(compression):
+            loguru.logger.error("COMPRESSION must be a boolean (true/false)")
+            raise exceptions.ConfigError("COMPRESSION must be a boolean (true/false)")
+        
+        return compression

@@ -27,5 +27,10 @@
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
   "PROTOCOL_HEADER": true,
-  "_comment_PROTOCOL_HEADER": "Adds 'RUV' magic bytes to packets. Set to false to make VPN traffic harder to identify (both peers must use the same setting)"
+  "_comment_PROTOCOL_HEADER": "Adds 'RUV' magic bytes to packets. Set to false to make VPN traffic harder to identify (both peers must use the same setting)",
+  "COMPRESSION": false,
+  "_comment_COMPRESSION": ["Set to true to enable compression (both peers must use the same setting)",
+                          "Compression can improve throughput on slow or congested networks,",
+                          "but increases CPU usage and adds latency.",
+                          "Zlib compression is used - level 6." ] 
 }
