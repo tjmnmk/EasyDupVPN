@@ -15,5 +15,7 @@
   "NUMBER_OF_DUPLICATES": 3,
   "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet",
   "PEER_PORT": 8111,
-  "LISTEN_PORT": 8111
+  "LISTEN_PORT": 8111,
+  "LOG_LEVEL": "INFO",
+  "NICE_LEVEL" : -10
 }
