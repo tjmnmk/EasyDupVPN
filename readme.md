@@ -92,7 +92,7 @@ cp config.example.json config.json
 | `LISTEN_ADDRESS` | Local IP address to bind to (use `0.0.0.0` for all interfaces) |
 | `LISTEN_PORT` | Local UDP port to listen on |
 | `TUN_DEVICE_NAME` | Name of the TUN interface (max 15 characters) |
-| `MTU` | MTU of the TUN interface (recommended: 220 bytes less than network MTU) |
+| `MTU` | MTU of the TUN interface (recommended: 130 bytes less than network MTU) |
 | `ENCRYPTION_KEY` | 64-character hex-encoded encryption key |
 | `NUMBER_OF_DUPLICATES` | Number of copies to send for each packet (1-50) |
 | `DEDUPLICATION_TTL_SECONDS` | How long to remember seen packets for deduplication (default: 60) |
@@ -149,7 +149,7 @@ sudo python3 easydupvpn.py config.json
   "LISTEN_ADDRESS": "0.0.0.0",
   "LISTEN_PORT": 8111,
   "TUN_DEVICE_NAME": "tun-edv0",
-  "MTU": 1280,
+  "MTU": 1370,
   "ENCRYPTION_KEY": "<same-key-on-both-sides>",
   "NUMBER_OF_DUPLICATES": 3,
   "DEDUPLICATION_TTL_SECONDS": 60,
@@ -175,7 +175,7 @@ sudo python3 easydupvpn.py config.json
   "LISTEN_ADDRESS": "0.0.0.0",
   "LISTEN_PORT": 8111,
   "TUN_DEVICE_NAME": "tun-edv0",
-  "MTU": 1280,
+  "MTU": 1370,
   "ENCRYPTION_KEY": "<same-key-on-both-sides>",
   "NUMBER_OF_DUPLICATES": 3,
   "DEDUPLICATION_TTL_SECONDS": 60,
