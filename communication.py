@@ -160,7 +160,8 @@ class DelayedPacketSender:
         for p in self._packets[:]:
             send_time, packet_data = p
             if current_time >= send_time:
-                loguru.logger.debug("Sending extra delayed duplicate packet")
+                after = current_time - send_time
+                loguru.logger.debug("Sending extra delayed duplicate packet after %.3f seconds delay" % after)
                 self._udp.udp_write(packet_data)
                 self._packets.remove(p)
 
