@@ -216,6 +216,10 @@ class Config:
         self.get_peer_port()
         self.get_log_level()
         self.get_learn_peer()
+        self.get_protocol_header()
+        self.get_compression()
+
+        self._check_for_unknown_settings()
 
     def _check_for_unknown_settings(self):
         for key in self._settings.keys():
