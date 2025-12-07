@@ -94,7 +94,7 @@ class Communication:
             self._udp.udp_write(packet_data)
 
     def receive_packet(self):
-        packet_data = self._udp.udp_read()
+        packet_data, address, port = self._udp.udp_read()
         if not packet_data:
             return None
         
@@ -114,6 +114,7 @@ class Communication:
             return None
         
         loguru.logger.debug(f"Decrypted UDP packet of length {len(data)}")
+        self._udp.learn_peer(address, port)
         return data
     
     def fileno(self):
@@ -127,6 +128,9 @@ class UDP:
         self._peer_host = config.Config().get_peer_address()
         self._peer_port = config.Config().get_peer_port()
         self._peer_dynamic = config.Config().get_peer_dynamic()
+        self._learned_peer = False
+        if self._peer_dynamic == "off":
+            self._learned_peer = True
         sock = self._udp_open()
         sock.setblocking(False)
         self._sock = sock
@@ -147,20 +151,22 @@ class UDP:
             return None  # No data available
         loguru.logger.debug(f"Read {len(data)} bytes from UDP socket from {address}")
 
+        address, port = address
+        return data, address, port
+    
+    def learn_peer(self, address, port):
         if self._peer_dynamic == "off":
-            if address != (self._peer_host, self._peer_port):
-                loguru.logger.warning(f"Received UDP packet from unexpected address {address}, expected {(self._peer_host, self._peer_port)}, discarding")
-                return None
-        elif self._peer_dynamic in ["learn"]:
-            loguru.logger.info(f"Learning peer address as {address}")
-            self._peer_host, self._peer_port = address
-            self._peer_dynamic = "off"  # disable further learning
-        elif self._peer_dynamic == "dynamic":
-            if address != (self._peer_host, self._peer_port):
-                loguru.logger.info(f"Relearning peer address as {address}")
-                self._peer_host, self._peer_port = address
-
-        return data
+            assert(self._learned_peer == True)
+        if self._learned_peer:
+            return
+        if (address, port) == (self._peer_host, self._peer_port):
+            return # no change
+        
+        loguru.logger.info(f"Learned peer address: {address}:{port}")
+        self._peer_host = address
+        self._peer_port = port
+        if self._peer_dynamic == "learn":
+            self._learned_peer = True
     
     def udp_write(self, packet_data):
         loguru.logger.debug(f"Writing {len(packet_data)} bytes to UDP socket to {(self._peer_host, self._peer_port)}")
