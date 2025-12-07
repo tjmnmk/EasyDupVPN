@@ -151,6 +151,17 @@ class ConfigChecks:
             return False
         
         return True
+    
+    @staticmethod
+    def validate_nice_level(nice_level):
+        if not isinstance(nice_level, int):
+            loguru.logger.error(f"NICE_LEVEL must be an integer, got {type(nice_level).__name__}")
+            return False
+        
+        if nice_level < -20 or nice_level > 19:
+            return False
+        
+        return True
         
 
 @singleton
@@ -366,3 +377,12 @@ class Config:
             raise exceptions.ConfigError("Invalid LOG_LEVEL in configuration")
         
         return log_level
+    
+    def get_nice_level(self):
+        nice_level = self._get_value("NICE_LEVEL", required=True)
+
+        if not ConfigChecks.validate_nice_level(nice_level):
+            loguru.logger.error("Invalid NICE_LEVEL in configuration")
+            raise exceptions.ConfigError("Invalid NICE_LEVEL in configuration")
+        
+        return nice_level

@@ -65,10 +65,6 @@ class Tun():
         loguru.logger.debug(f"Writing {len(data)} bytes to TUN device")
         return self._tun.write(data)
     
-    def fileno(self):
-        """Return file descriptor for use with select()"""
-        return self._tun.fileno()
-    
     def _close(self):
         loguru.logger.debug("Closing TUN device")
         self._tun.close()
@@ -76,3 +72,6 @@ class Tun():
         loguru.logger.info(f"Deleting TUN interface {self._device}")
         sh.ip('link', 'set', 'dev', self._device, 'down')
         sh.ip('tuntap', 'del', 'dev', self._device, 'mode', 'tun')
+
+    def fileno(self):
+        return self._tun.fileno()

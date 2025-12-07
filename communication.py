@@ -81,10 +81,6 @@ class Communication:
 
         self._deduplication_manager = DeduplicationManager()
 
-    def fileno(self):
-        """Return file descriptor for use with select()"""
-        return self._udp.fileno()
-
     def create_header(self):
         header = const.RAWUDPVPN_HEADER_START
         header += random.randbytes(16) # 16 bytes for deduplication nonce
@@ -119,6 +115,9 @@ class Communication:
         
         loguru.logger.debug(f"Decrypted UDP packet of length {len(data)}")
         return data
+    
+    def fileno(self):
+        return self._udp.fileno()
         
 
 class UDP:
@@ -152,10 +151,10 @@ class UDP:
 
         return data
     
-    def fileno(self):
-        """Return file descriptor for use with select()"""
-        return self._sock.fileno()
-    
     def udp_write(self, packet_data):
         loguru.logger.debug(f"Writing {len(packet_data)} bytes to UDP socket to {(self._peer_host, self._peer_port)}")
         self._sock.sendto(packet_data, (self._peer_host, self._peer_port))
+
+    def fileno(self):
+        return self._sock.fileno()
+    
