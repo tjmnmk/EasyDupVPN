@@ -78,11 +78,15 @@ class Communication:
         self._udp = UDP()
         self._number_of_duplicates = config.Config().get_number_of_duplicates()
         self._crypto = crypto.Crypto()
+        self._protocol_header = config.Config().get_protocol_header()
 
         self._deduplication_manager = DeduplicationManager()
 
     def create_header(self):
-        header = const.RAWUDPVPN_HEADER_START
+        if self._protocol_header:
+            header = const.RAWUDPVPN_HEADER_START
+        else:
+            header = b''
         header += random.randbytes(16) # 16 bytes for deduplication nonce
 
         return header
@@ -98,11 +102,14 @@ class Communication:
         if not packet_data:
             return None
         
-        if not packet_data.startswith(const.RAWUDPVPN_HEADER_START):
-            loguru.logger.warning("Received UDP packet with invalid header, discarding")
-            return None
+        if self._protocol_header:
+            if not packet_data.startswith(const.RAWUDPVPN_HEADER_START):
+                loguru.logger.warning("Received UDP packet with invalid header, discarding")
+                return None
+            data = packet_data[len(const.RAWUDPVPN_HEADER_START):] # strip header
+        else:
+            data = packet_data
         
-        data = packet_data[len(const.RAWUDPVPN_HEADER_START):] # strip header
         deduplication_nonce = data[:16]
         data = data[16:] # strip deduplication nonce
 
@@ -127,7 +134,7 @@ class UDP:
         self._port = config.Config().get_listen_port()
         self._peer_host = config.Config().get_peer_address()
         self._peer_port = config.Config().get_peer_port()
-        self._peer_dynamic = config.Config().get_peer_dynamic()
+        self._peer_dynamic = config.Config().get_learn_peer()
         self._learned_peer = False
         if self._peer_dynamic == "off":
             self._learned_peer = True

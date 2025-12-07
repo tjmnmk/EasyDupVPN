@@ -421,3 +421,12 @@ class Config:
             raise exceptions.ConfigError("Invalid PEER_LEARN in configuration")
         
         return learn_peer
+    
+    def get_protocol_header(self):
+        protocol_header = self._get_value("PROTOCOL_HEADER", default=True, log_level="info")
+
+        if not isinstance(protocol_header, bool):
+            loguru.logger.error("PROTOCOL_HEADER must be a boolean (true/false)")
+            raise exceptions.ConfigError("PROTOCOL_HEADER must be a boolean (true/false)")
+        
+        return protocol_header

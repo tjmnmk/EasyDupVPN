@@ -17,7 +17,7 @@
   "TUN_DEVICE_NAME": "tun-edv0",
   "MTU": 1280,
   "_comment_MTU": "Recommended to set 220 bytes lower than the MTU of the underlying network (e.g., for standard Ethernet 1500 use 1300)",
-  "ENCRYPTION_KEY": "46d59ad52f05584bcdc46dc83982a89c78824c16ca1daf7f4b1a1d9a3baee066",
+  "ENCRYPTION_KEY": "CHANGEME",
   "_comment_ENCRYPTION_KEY": "Use easydupvpn-genkey to generate a secure random key",
   "DEDUPLICATION_TTL_SECONDS": 60,
   "_comment_DEDUPLICATION_TTL_SECONDS": "Time in seconds to remember seen nonces for deduplication purposes",
@@ -25,5 +25,7 @@
   "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet",
   "LISTEN_PORT": 8111,
   "LOG_LEVEL": "INFO",
-  "NICE_LEVEL" : -10
+  "NICE_LEVEL": -10,
+  "PROTOCOL_HEADER": true,
+  "_comment_PROTOCOL_HEADER": "Adds 'RUV' magic bytes to packets. Set to false to make VPN traffic harder to identify (both peers must use the same setting)"
 }

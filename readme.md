@@ -57,6 +57,7 @@ cp config.example.json config.json
 | `DEDUPLICATION_TTL_SECONDS` | How long to remember seen packets for deduplication (default: 60) |
 | `LOG_LEVEL` | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`) |
 | `NICE_LEVEL` | Process priority (-20 to 19, lower = higher priority, default: 0) |
+| `PROTOCOL_HEADER` | Add protocol identifier to packets (default: `true`). Set to `false` to make traffic harder to identify as VPN |
 
 ### PEER_LEARN Modes
 
@@ -107,7 +108,8 @@ sudo python3 easydupvpn.py config.json
   "NUMBER_OF_DUPLICATES": 3,
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
-  "NICE_LEVEL": -10
+  "NICE_LEVEL": -10,
+  "PROTOCOL_HEADER": true
 }
 ```
 
@@ -127,7 +129,8 @@ sudo python3 easydupvpn.py config.json
   "NUMBER_OF_DUPLICATES": 3,
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
-  "NICE_LEVEL": -10
+  "NICE_LEVEL": -10,
+  "PROTOCOL_HEADER": true
 }
 ```
 
