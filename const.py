@@ -37,5 +37,3 @@ CONFIG_KNOWN_VALUES = (
     "COMPRESSION",
 )
 CONFIG_COMMENTS_PREFIXES = "_comment_"
-
-DEDUPLICATION_MANAGER_BUFFER_SIZE = 1048576 # store last 1 million nonces, total size 16 * 1,048,576 = 16 MiB
