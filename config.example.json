@@ -1,0 +1,17 @@
+{
+  "TUN_ADDRESS_IPV4": "10.0.0.1",
+  "TUN_NETMASK_IPV4": 24,
+  "TUN_ADDRESS_IPV6": "fd00::1",
+  "TUN_NETMASK_IPV6": 64,
+  "PEER_ADDRESS": "192.168.1.100",
+  "LISTEN_ADDRESS": "0.0.0.0",
+  "TUN_DEVICE_NAME": "tun0",
+  "MTU": 1280,
+  "_comment_MTU": "Recommended to set 220 bytes lower than the MTU of the underlying network (e.g., for standard Ethernet 1500 use 1300)",
+  "ENCRYPTION_KEY": "changeme",
+  "_comment_ENCRYPTION_KEY": "Use easydupvpn-genkey to generate a secure random key",
+  "DEDUPLICATION_TTL_SECONDS": 60,
+  "_comment_DEDUPLICATION_TTL_SECONDS": "Time in seconds to remember seen nonces for deduplication purposes",
+  "NUMBER_OF_DUPLICATES": 3,
+  "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet"
+}

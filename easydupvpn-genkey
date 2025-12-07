@@ -1,0 +1,10 @@
+#! /bin/bash -eu
+set -o pipefail
+
+bin_key=$(dd if=/dev/random bs=32 count=1 2>/dev/null)
+if [ "$(echo -n $bin_key | wc -c)" -ne 32 ]; then
+    echo "Failed to read 32 bytes from /dev/random" >&2
+    exit 1
+fi
+
+echo -n "$bin_key" | xxd -p -c 32
