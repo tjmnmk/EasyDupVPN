@@ -15,6 +15,10 @@ class Crypto:
 
     def decrypt(self, encrypted_data):
         try:
-            return self._box.decrypt(encrypted_data)
+            decrypted = self._box.decrypt(encrypted_data)
         except Exception as e:
             loguru.logger.error(f"Decryption failed: {e}")
+            return None
+
+        loguru.logger.debug(f"Decrypted data length: {len(decrypted)}")
+        return decrypted

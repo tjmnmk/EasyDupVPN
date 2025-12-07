@@ -43,6 +43,7 @@ class DeduplicationManager:
         self._iterations_of_clear_check += 1
         if self._iterations_of_clear_check < 1000:
             return
+        self._iterations_of_clear_check = 0
         ttl = config.Config().get_deduplication_ttl_seconds()
 
         # we need to check if both sets are older than ttl, if so, clear the older one
@@ -62,6 +63,8 @@ class DeduplicationManager:
             return False
         if self._set2.check(nonce):
             return False
+        
+        return True
 
     def nonce(self, nonce):
         new = self._is_nonce_new(nonce)
@@ -78,6 +81,10 @@ class Communication:
 
         self._deduplication_manager = DeduplicationManager()
 
+    def fileno(self):
+        """Return file descriptor for use with select()"""
+        return self._udp.fileno()
+
     def create_header(self):
         header = const.RAWUDPVPN_HEADER_START
         header += random.randbytes(16) # 16 bytes for deduplication nonce
@@ -86,8 +93,8 @@ class Communication:
 
     def send_packet(self, data):
         encrypted_data = self._crypto.encrypt(data)
+        packet_data = self.create_header() + encrypted_data
         for _ in range(self._number_of_duplicates):
-            packet_data = self.create_header() + data
             self._udp.udp_write(packet_data)
 
     def receive_packet(self):
@@ -100,13 +107,17 @@ class Communication:
             return None
         
         data = packet_data[len(const.RAWUDPVPN_HEADER_START):] # strip header
-        deduplication_nonce = data[:8]
-        data = data[8:] # strip deduplication nonce
+        deduplication_nonce = data[:16]
+        data = data[16:] # strip deduplication nonce
 
         if not self._deduplication_manager.nonce(deduplication_nonce):
             return None
         
         data = self._crypto.decrypt(data)
+        if not data:
+            return None
+        
+        loguru.logger.debug(f"Decrypted UDP packet of length {len(data)}")
         return data
         
 
@@ -134,13 +145,16 @@ class UDP:
             data, address = self._sock.recvfrom(9000) # TODO: variable buffer size
         except BlockingIOError:
             return None  # No data available
-        
         loguru.logger.debug(f"Read {len(data)} bytes from UDP socket from {address}")
         if address != (self._peer_host, self._peer_port):
             loguru.logger.warning(f"Received UDP packet from unexpected address {address}, expected {(self._peer_host, self._peer_port)}, discarding")
             return None
 
         return data
+    
+    def fileno(self):
+        """Return file descriptor for use with select()"""
+        return self._sock.fileno()
     
     def udp_write(self, packet_data):
         loguru.logger.debug(f"Writing {len(packet_data)} bytes to UDP socket to {(self._peer_host, self._peer_port)}")

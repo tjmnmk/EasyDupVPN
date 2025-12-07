@@ -140,6 +140,17 @@ class ConfigChecks:
             loguru.logger.warning("DEDUPLICATION_TTL_SECONDS set very high, may cause increased memory usage")
         
         return True
+    
+    @staticmethod
+    def validate_loguru_log_level(level):
+        valid_levels = ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL"]
+        if not isinstance(level, str):
+            loguru.logger.error(f"LOG_LEVEL must be a string, got {type(level).__name__}")
+            return False
+        if level not in valid_levels:
+            return False
+        
+        return True
         
 
 @singleton
@@ -346,3 +357,12 @@ class Config:
             raise exceptions.ConfigError("Invalid PEER_PORT in configuration")
         
         return peer_port
+    
+    def get_log_level(self):
+        log_level = self._get_value("LOG_LEVEL", required=True)
+
+        if not ConfigChecks.validate_loguru_log_level(log_level):
+            loguru.logger.error("Invalid LOG_LEVEL in configuration")
+            raise exceptions.ConfigError("Invalid LOG_LEVEL in configuration")
+        
+        return log_level
