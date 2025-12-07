@@ -96,7 +96,7 @@ cp config.example.json config.json
 | `VPN_DATA_MAX_SIZE_SPLIT` | Maximum size of data in each split packet. Set to 0 to disable packet splitting. Useful when underlying network has strict MTU limits. Must be set on both peers but can have different values (default: 0) |
 | `ENCRYPTION_KEY` | 64-character hex-encoded encryption key |
 | `NUMBER_OF_DUPLICATES` | Number of copies to send for each packet (1-50) |
-| `SEND_EXTRA_DELAYED_PACKET_AFTER` | Send one extra delayed duplicate after specified delay in seconds (0.05-10.0). Set to 0 to disable. Helps with bursty packet loss (default: 0) |
+| `SEND_EXTRA_DELAYED_PACKET_AFTER` | Send one extra delayed duplicate after specified delay in seconds (0.05-10.0). Set to 0 to disable. Helps with bursty packet loss. **Note:** Timing is not guaranteed - actual delay may be several hundred milliseconds longer in extreme cases (default: 0) |
 | `DEDUPLICATION_TTL_SECONDS` | How long to remember seen packets for deduplication (default: 60) |
 | `LOG_LEVEL` | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`) |
 | `NICE_LEVEL` | Process priority (-20 to 19, lower = higher priority, default: 0) |
@@ -147,13 +147,17 @@ sudo python3 easydupvpn.py config.json
 {
   "TUN_ADDRESS_IPV4": "10.0.0.1",
   "TUN_NETMASK_IPV4": 24,
+  "TUN_ADDRESS_IPV6": "fd00::1",
+  "TUN_NETMASK_IPV6": 64,
   "PEER_LEARN": "learn",
   "LISTEN_ADDRESS": "0.0.0.0",
   "LISTEN_PORT": 8111,
   "TUN_DEVICE_NAME": "tun-edv0",
   "MTU": 1370,
+  "VPN_DATA_MAX_SIZE_SPLIT": 0,
   "ENCRYPTION_KEY": "<same-key-on-both-sides>",
   "NUMBER_OF_DUPLICATES": 3,
+  "SEND_EXTRA_DELAYED_PACKET_AFTER": 0,
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
@@ -171,6 +175,8 @@ sudo python3 easydupvpn.py config.json
 {
   "TUN_ADDRESS_IPV4": "10.0.0.2",
   "TUN_NETMASK_IPV4": 24,
+  "TUN_ADDRESS_IPV6": "fd00::2",
+  "TUN_NETMASK_IPV6": 64,
   "PEER_ADDRESS": "192.168.1.1",
   "PEER_PORT": 8111,
   "PEER_LEARN": "off",
@@ -178,8 +184,10 @@ sudo python3 easydupvpn.py config.json
   "LISTEN_PORT": 8111,
   "TUN_DEVICE_NAME": "tun-edv0",
   "MTU": 1370,
+  "VPN_DATA_MAX_SIZE_SPLIT": 0,
   "ENCRYPTION_KEY": "<same-key-on-both-sides>",
   "NUMBER_OF_DUPLICATES": 3,
+  "SEND_EXTRA_DELAYED_PACKET_AFTER": 0,
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,

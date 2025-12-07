@@ -135,13 +135,6 @@ class DeduplicationManager:
 
 
 class DelayedPacketSender:
-    """
-    It is not guaranteed that the delayed packet will be sent exactly after the specified delay,
-    the send_dalayed_packets() is called only after sending normal packets / recv packets, so if there is no traffic,
-    the delayed packets will not be sent.
-
-    This should be ok for most use cases.
-    """
     def __init__(self, udp_instance):
         self._packets = []
         self._send_extra_delayed_packet_after = config.Config().get_send_extra_delayed_packet_after()
@@ -183,6 +176,10 @@ class Communication:
 
         self._send_extra_delayed_packet = bool(config.Config().get_send_extra_delayed_packet_after())
         self._delayed_packet_sender = DelayedPacketSender(self._udp)
+
+    def check_delayed_packets(self):
+        if self._send_extra_delayed_packet:
+            self._delayed_packet_sender.send_delayed_packets()
 
     def _generate_dedup_nonce(self):
         try:

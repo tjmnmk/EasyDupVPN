@@ -32,7 +32,11 @@ class MainWorker:
         comm_fd = self.communication_i.fileno()
 
         while True:
-            selectable, _, _ = select.select([tun_fd, comm_fd], [], [])
+            # Use 0.1 second (100ms) timeout to allow delayed packet checking
+            selectable, _, _ = select.select([tun_fd, comm_fd], [], [], 0.1)
+            
+            # Always check for delayed packets to send
+            self.communication_i.check_delayed_packets()
 
             if tun_fd in selectable:
                 data = self.tun_i.tun_read()
