@@ -1,4 +1,5 @@
 import zlib
+import loguru
 
 import config
 
@@ -9,10 +10,14 @@ class Compressor:
     def compress(self, data):
         assert(self._compression_enabled)
 
-        return zlib.compress(data)
+        compressed = zlib.compress(data)
+        return compressed
         
     def decompress(self, data):
         assert(self._compression_enabled)
 
-        return zlib.decompress(data)
-        
+        try:
+            return zlib.decompress(data)
+        except Exception as e:
+            loguru.logger.error(f"Decompression failed, is compression enabled on both sides? {e}")
+            return None

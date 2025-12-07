@@ -134,6 +134,9 @@ class Communication:
             original_length = len(data)
             data = self._compression_i.decompress(data)
             loguru.logger.debug(f"Decompressed data length: {len(data)}; original length: {original_length}")
+            if not data:
+                return None
+            
         return data
     
     def fileno(self):
