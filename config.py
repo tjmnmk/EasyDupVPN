@@ -527,3 +527,17 @@ class Config:
             raise exceptions.ConfigError("Invalid VPN_DATA_MAX_SIZE_SPLIT in configuration")
         
         return max_size
+    
+    def get_send_extra_delayed_packet_after(self):
+        delay = self._get_value("SEND_EXTRA_DELAYED_PACKET_AFTER", default=0.0, log_level="info")
+
+        if not isinstance(delay, (int, float)):
+            loguru.logger.error("SEND_EXTRA_DELAYED_PACKET_AFTER must be a number (int or float)")
+            raise exceptions.ConfigError("SEND_EXTRA_DELAYED_PACKET_AFTER must be a number (int or float)")
+        
+        if delay < 0.05 or delay > 10.0:
+            loguru.logger.error("SEND_EXTRA_DELAYED_PACKET_AFTER must be between 0.05 and 10.0 seconds")
+            raise exceptions.ConfigError("SEND_EXTRA_DELAYED_PACKET_AFTER must be between 0.05 and 10.0 seconds")
+        
+        return float(delay)
+    

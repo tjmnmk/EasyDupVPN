@@ -93,8 +93,10 @@ cp config.example.json config.json
 | `LISTEN_PORT` | Local UDP port to listen on |
 | `TUN_DEVICE_NAME` | Name of the TUN interface (max 15 characters) |
 | `MTU` | MTU of the TUN interface (recommended: 130 bytes less than network MTU) |
+| `VPN_DATA_MAX_SIZE_SPLIT` | Maximum size of data in each split packet. Set to 0 to disable packet splitting. Useful when underlying network has strict MTU limits. Must be set on both peers but can have different values (default: 0) |
 | `ENCRYPTION_KEY` | 64-character hex-encoded encryption key |
 | `NUMBER_OF_DUPLICATES` | Number of copies to send for each packet (1-50) |
+| `SEND_EXTRA_DELAYED_PACKET_AFTER` | Send one extra delayed duplicate after specified delay in seconds (0.05-10.0). Set to 0 to disable. Helps with bursty packet loss (default: 0) |
 | `DEDUPLICATION_TTL_SECONDS` | How long to remember seen packets for deduplication (default: 60) |
 | `LOG_LEVEL` | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`) |
 | `NICE_LEVEL` | Process priority (-20 to 19, lower = higher priority, default: 0) |
@@ -193,11 +195,14 @@ sudo python3 easydupvpn.py config.json
 ## How It Works
 
 1. Packets entering the TUN interface are optionally compressed (if `COMPRESSION` is enabled)
-2. Compressed/raw data is encrypted using NaCl SecretBox
-3. A random 16-byte nonce is prepended for deduplication
-4. The packet is sent `NUMBER_OF_DUPLICATES` times over UDP
-5. On the receiving end, duplicate packets are detected and discarded using the nonce
-6. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
+2. If `VPN_DATA_MAX_SIZE_SPLIT` is enabled, data is split into smaller chunks before encryption
+3. Each chunk (or whole packet if no splitting) is encrypted using NaCl SecretBox
+4. A random nonce is prepended for deduplication (for split packets, base nonce + part index ensures unique nonces)
+5. Protocol header and part metadata (if splitting) are added
+6. The packet is sent `NUMBER_OF_DUPLICATES` times over UDP
+7. On the receiving end, duplicate packets are detected and discarded using the nonce
+8. Split packets are reassembled after decryption (with 15-second timeout for incomplete packets)
+9. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
 
 ## Running as a Service
 

@@ -133,6 +133,40 @@ class DeduplicationManager:
         
         return new
 
+
+class DelayedPacketSender:
+    """
+    It is not guaranteed that the delayed packet will be sent exactly after the specified delay,
+    the send_dalayed_packets() is called only after sending normal packets / recv packets, so if there is no traffic,
+    the delayed packets will not be sent.
+
+    This should be ok for most use cases.
+    """
+    def __init__(self, udp_instance):
+        self._packets = []
+        self._send_extra_delayed_packet_after = config.Config().get_send_extra_delayed_packet_after()
+        self._udp = udp_instance
+
+        self._last_check_time = time.monotonic()
+
+    def add_delayed_packet(self, packet_data):
+        send_time = time.monotonic() + self._send_extra_delayed_packet_after
+        self._packets.append((send_time, packet_data))
+
+    def send_delayed_packets(self):
+        if self._last_check_time + 0.01 > time.monotonic():
+            return # check every 10ms
+        current_time = time.monotonic()
+        for p in self._packets[:]:
+            send_time, packet_data = p
+            if current_time >= send_time:
+                loguru.logger.debug("Sending extra delayed duplicate packet")
+                self._udp.udp_write(packet_data)
+                self._packets.remove(p)
+
+        self._last_check_time = current_time
+
+
 class Communication:
     def __init__(self):
         self._udp = UDP()
@@ -145,6 +179,9 @@ class Communication:
         self._deduplication_manager = DeduplicationManager()
         self._packet_splits = bool(config.Config().get_vpn_data_max_size_split())
         self._packet_splitter = PacketSplitter()
+
+        self._send_extra_delayed_packet = bool(config.Config().get_send_extra_delayed_packet_after())
+        self._delayed_packet_sender = DelayedPacketSender(self._udp)
 
     def _generate_dedup_nonce(self):
         try:
@@ -170,8 +207,8 @@ class Communication:
         else:
             header = b''
         
-        if dedup_nonce == None:
-            self._generate_dedup_nonce()
+        if dedup_nonce is None:
+            dedup_nonce = self._generate_dedup_nonce()
         header += dedup_nonce # add deduplication nonce
         if self._packet_splits:
             header += struct.pack("B", part)  # 1 byte for part index
@@ -190,6 +227,8 @@ class Communication:
             packet_data = self.create_header() + encrypted_data
             for _ in range(self._number_of_duplicates):
                 self._udp.udp_write(packet_data)
+            if self._send_extra_delayed_packet:
+                self._delayed_packet_sender.add_delayed_packet(packet_data)
         else:
             parts = self._packet_splitter.split(encrypted_data)
             nonce = self._generate_dedup_nonce() # we need same nonce for all parts
@@ -197,8 +236,16 @@ class Communication:
                 packet_data = self.create_header(part=part_index, total_parts=len(parts), dedup_nonce=nonce) + part
                 for _ in range(self._number_of_duplicates):
                     self._udp.udp_write(packet_data)
+                if self._send_extra_delayed_packet:
+                    self._delayed_packet_sender.add_delayed_packet(packet_data)
+        if self._send_extra_delayed_packet:
+            self._delayed_packet_sender.send_delayed_packets()
 
     def receive_packet(self):
+        # first send any delayed packets if needed
+        if self._send_extra_delayed_packet:
+            self._delayed_packet_sender.send_delayed_packets()
+            
         packet_data, address, port = self._udp.udp_read()
         if not packet_data:
             return None

@@ -29,6 +29,8 @@
   "_comment_DEDUPLICATION_TTL_SECONDS": "Time in seconds to remember seen nonces for deduplication purposes",
   "NUMBER_OF_DUPLICATES": 3,
   "_comment_NUMBER_OF_DUPLICATES": "Number of duplicate packets to send for each original packet",
+  "SEND_EXTRA_DELAYED_PACKET_AFTER": 0.05,
+  "_comment_SEND_EXTRA_DELAYED_PACKET_AFTER": "if not 0 then send extra duplicate packet after specified delay in seconds (can help with lossy networks)",
   "LISTEN_PORT": 8111,
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
