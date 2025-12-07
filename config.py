@@ -535,7 +535,7 @@ class Config:
             loguru.logger.error("SEND_EXTRA_DELAYED_PACKET_AFTER must be a number (int or float)")
             raise exceptions.ConfigError("SEND_EXTRA_DELAYED_PACKET_AFTER must be a number (int or float)")
         
-        if delay < 0.05 or delay > 10.0:
+        if (delay < 0.05 or delay > 10.0) and delay != 0:
             loguru.logger.error("SEND_EXTRA_DELAYED_PACKET_AFTER must be between 0.05 and 10.0 seconds")
             raise exceptions.ConfigError("SEND_EXTRA_DELAYED_PACKET_AFTER must be between 0.05 and 10.0 seconds")
         
