@@ -7,6 +7,7 @@ A simple UDP-based VPN that sends multiple copies of each packet to improve reli
 - **Packet Duplication**: Sends configurable number of duplicate packets to combat packet loss
 - **Automatic Deduplication**: Removes duplicate packets on the receiving end using nonce-based tracking
 - **Encryption**: Uses NaCl (libsodium) for authenticated encryption
+- **Compression**: Optional zlib compression to reduce bandwidth usage
 - **IPv4 & IPv6 Support**: Configure both IPv4 and IPv6 addresses on the TUN interface
 - **NAT Support**: Dynamic peer address learning for clients behind NAT
 - **Low Overhead**: Efficient event-driven architecture using `select()`
@@ -58,6 +59,7 @@ cp config.example.json config.json
 | `LOG_LEVEL` | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`) |
 | `NICE_LEVEL` | Process priority (-20 to 19, lower = higher priority, default: 0) |
 | `PROTOCOL_HEADER` | Add protocol identifier to packets (default: `true`). Set to `false` to make traffic harder to identify as VPN |
+| `COMPRESSION` | Enable zlib compression (default: `false`). Both peers must use the same setting |
 
 ### PEER_LEARN Modes
 
@@ -109,7 +111,8 @@ sudo python3 easydupvpn.py config.json
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
-  "PROTOCOL_HEADER": true
+  "PROTOCOL_HEADER": true,
+  "COMPRESSION": false
 }
 ```
 
@@ -130,17 +133,52 @@ sudo python3 easydupvpn.py config.json
   "DEDUPLICATION_TTL_SECONDS": 60,
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
-  "PROTOCOL_HEADER": true
+  "PROTOCOL_HEADER": true,
+  "COMPRESSION": false
 }
 ```
 
 ## How It Works
 
-1. Packets entering the TUN interface are encrypted using NaCl SecretBox
-2. A random 16-byte nonce is prepended for deduplication
-3. The packet is sent `NUMBER_OF_DUPLICATES` times over UDP
-4. On the receiving end, duplicate packets are detected and discarded using the nonce
-5. The decrypted packet is written to the TUN interface
+1. Packets entering the TUN interface are optionally compressed (if `COMPRESSION` is enabled)
+2. Compressed/raw data is encrypted using NaCl SecretBox
+3. A random 16-byte nonce is prepended for deduplication
+4. The packet is sent `NUMBER_OF_DUPLICATES` times over UDP
+5. On the receiving end, duplicate packets are detected and discarded using the nonce
+6. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
+
+## Running as a Service
+
+A systemd service file is included for running EasyDupVPN as a system service.
+
+### Installation
+
+```bash
+# Copy files to system directories
+sudo mkdir -p /opt/easydupvpn
+sudo cp *.py /opt/easydupvpn/
+sudo mkdir -p /etc/easydupvpn
+sudo cp config.json /etc/easydupvpn/
+
+# Install and enable service
+sudo cp easydupvpn.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable easydupvpn
+sudo systemctl start easydupvpn
+```
+
+### Managing the Service
+
+```bash
+# Check status
+sudo systemctl status easydupvpn
+
+# View logs
+sudo journalctl -u easydupvpn -f
+
+# Restart after config changes
+sudo systemctl restart easydupvpn
+```
 
 ## License
 
