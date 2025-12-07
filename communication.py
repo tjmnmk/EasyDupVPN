@@ -146,7 +146,14 @@ class Communication:
         self._packet_splits = bool(config.Config().get_vpn_data_max_size_split())
         self._packet_splitter = PacketSplitter()
 
-    def create_header(self, part=None, total_parts=None):
+    def _generate_dedup_nonce(self):
+        try:
+            dedup_nonce = random.randbytes(16) # 16 bytes for deduplication nonce
+        except AttributeError:
+            dedup_nonce = os.urandom(16)
+        return
+
+    def create_header(self, part=None, total_parts=None, dedup_nonce=None):
         """
         Header:
         - Protocol header (optional) - when PROTOCOL_HEADER is enabled
@@ -154,14 +161,17 @@ class Communication:
         - 1 byte number of index of this part (optional) - when packet is split
         - 1 byte number of total parts (optional) - when packet is split
         """
+        if self._part is not None:
+            assert(total_parts)
+            assert(dedup_nonce)
+
         if self._protocol_header:
             header = const.RAWUDPVPN_HEADER_START
         else:
             header = b''
-        try:
-            dedup_nonce = random.randbytes(16) # 16 bytes for deduplication nonce
-        except AttributeError:
-            dedup_nonce = os.urandom(16)
+        
+        if dedup_nonce == None:
+            self._generate_dedup_nonce()
         header += dedup_nonce # add deduplication nonce
         if self._packet_splits:
             header += struct.pack("B", part)  # 1 byte for part index
@@ -182,8 +192,9 @@ class Communication:
                 self._udp.udp_write(packet_data)
         else:
             parts = self._packet_splitter.split(encrypted_data)
+            nonce = self._generate_dedup_nonce() # we need same nonce for all parts
             for part_index, part in enumerate(parts):
-                packet_data = self.create_header(part=part_index, total_parts=len(parts)) + part
+                packet_data = self.create_header(part=part_index, total_parts=len(parts), dedup_nonce=nonce) + part
                 for _ in range(self._number_of_duplicates):
                     self._udp.udp_write(packet_data)
 
