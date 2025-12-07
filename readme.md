@@ -21,33 +21,53 @@ A simple UDP-based VPN that sends multiple copies of each packet to improve reli
 ## Requirements
 
 - Linux (uses TUN interface)
-- Python 3.x
+- Python 3.7 or higher
 - Root privileges (for TUN interface creation)
 
 ## Installation
 
-### Arch Linux
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/tjmnmk/EasyDupVPN.git
+cd EasyDupVPN
+```
+
+### 2. Install Dependencies
+
+Choose the method for your distribution:
+
+#### Arch Linux
 
 ```bash
 sudo pacman -S python python-loguru python-sh python-pynacl python-psutil
 ```
 
-### Debian / Ubuntu
+#### Debian / Ubuntu
 
-```bash
-sudo apt install python3 python3-pip
-pip install -r requirements.txt
-```
-
-Or install system packages (may be older versions):
 ```bash
 sudo apt install python3 python3-loguru python3-sh python3-nacl python3-psutil
 ```
 
-### Using pip (any distro)
+#### Using pip (any distribution)
 
 ```bash
 pip install -r requirements.txt
+```
+
+### 3. Generate Encryption Key
+
+```bash
+./easydupvpn-genkey
+```
+
+Copy the generated key for use in your configuration files.
+
+### 4. Configure
+
+```bash
+cp config.example.json config.json
+nano config.json  # Edit with your settings
 ```
 
 ## Configuration
