@@ -29,7 +29,7 @@ A simple UDP-based VPN that sends multiple copies of each packet to improve reli
 ### Arch Linux
 
 ```bash
-sudo pacman -S python python-loguru python-sh python-pynacl python-psutil python-brotli
+sudo pacman -S python python-loguru python-sh python-pynacl python-psutil
 ```
 
 ### Debian / Ubuntu
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 Or install system packages (may be older versions):
 ```bash
-sudo apt install python3 python3-loguru python3-sh python3-nacl python3-psutil python3-brotli
+sudo apt install python3 python3-loguru python3-sh python3-nacl python3-psutil
 ```
 
 ### Using pip (any distro)
