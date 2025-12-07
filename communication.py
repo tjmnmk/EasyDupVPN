@@ -3,16 +3,18 @@ import loguru
 import random
 import time
 import os
+import struct
 
 import config
 import const
 import crypto
 import compressor
+import common
 
 class NonceSet:
     def __init__(self):
         self._set = set()
-        self._time = time.time()
+        self._time = time.monotonic()
     
     def add(self, nonce):
         self._set.add(nonce)
@@ -22,14 +24,69 @@ class NonceSet:
         return nonce in self._set
     
     def get_age(self):
-        return int(time.time() - self._time)
+        return int(time.monotonic() - self._time)
     
     def get_last_cleared_time(self):
         return self._time
     
     def clear(self):
         self._set.clear()
-        self._time = time.time()
+        self._time = time.monotonic()
+
+
+class PacketSplitterSet:
+    def __init__(self):
+        self._data = {}
+        self._created = time.monotonic()
+
+    def add_part_and_assemble(self, part_index, total_parts, part_data):
+        self._data[part_index] = part_data
+        # check if all parts are received
+        if len(self._data) == total_parts:
+            assembled_data = b''.join(self._data[i] for i in range(total_parts))
+
+            return assembled_data
+        
+        return None
+
+    def age(self):
+        return int(time.monotonic() - self._created)
+
+
+class PacketSplitter:
+    def __init__(self):
+        self._max_size = config.Config().get_vpn_data_max_size_split()
+        self._data = {}
+        self._cleanup_iterations = 0
+
+    def split(self, data):
+        return common.split_string_to_chunks(data, self._max_size)
+
+    def add_part_and_assemble(self, nonce, part_index, total_parts, part_data):
+        self._cleanup_iterations += 1
+        if self._cleanup_iterations >= 1000:
+            self.cleanup_old()
+            self._cleanup_iterations = 0
+
+        if nonce not in self._data:
+            self._data[nonce] = PacketSplitterSet()
+        
+        assembled_data = self._data[nonce].add_part_and_assemble(part_index, total_parts, part_data)
+        if assembled_data is not None:
+            del self._data[nonce]
+            return assembled_data
+        
+        return None
+    
+    def cleanup_old(self):
+        to_delete = []
+        for nonce, splitter_set in self._data.items():
+            if splitter_set.age() > 15:  # 15 seconds timeout
+                to_delete.append(nonce)
+        
+        for nonce in to_delete:
+            loguru.logger.debug(f"Cleaning up old packet splitter set for nonce {nonce.hex()}")
+            del self._data[nonce]
 
 
 class DeduplicationManager:
@@ -85,8 +142,17 @@ class Communication:
         self._compression_i = compressor.Compressor()
 
         self._deduplication_manager = DeduplicationManager()
+        self._packet_splits = bool(config.Config().get_vpn_data_max_size_split())
+        self._packet_splitter = PacketSplitter()
 
-    def create_header(self):
+    def create_header(self, part=None, total_parts=None):
+        """
+        Header:
+        - Protocol header (optional) - when PROTOCOL_HEADER is enabled
+        - 16 bytes deduplication nonce - always present
+        - 1 byte number of index of this part (optional) - when packet is split
+        - 1 byte number of total parts (optional) - when packet is split
+        """
         if self._protocol_header:
             header = const.RAWUDPVPN_HEADER_START
         else:
@@ -96,6 +162,9 @@ class Communication:
         except AttributeError:
             dedup_nonce = os.urandom(16)
         header += dedup_nonce # add deduplication nonce
+        if self._packet_splits:
+            header += struct.pack("B", part)  # 1 byte for part index
+            header += struct.pack("B", total_parts)  # 1 byte for total parts
 
         return header
 
@@ -106,9 +175,16 @@ class Communication:
             loguru.logger.debug(f"Compressed data length: {len(data)}; original length: {original_length}")
             
         encrypted_data = self._crypto.encrypt(data)
-        packet_data = self.create_header() + encrypted_data
-        for _ in range(self._number_of_duplicates):
-            self._udp.udp_write(packet_data)
+        if not self._packet_splits:
+            packet_data = self.create_header() + encrypted_data
+            for _ in range(self._number_of_duplicates):
+                self._udp.udp_write(packet_data)
+        else:
+            parts = self._packet_splitter.split(encrypted_data)
+            for part_index, part in enumerate(parts):
+                packet_data = self.create_header(part=part_index, total_parts=len(parts)) + part
+                for _ in range(self._number_of_duplicates):
+                    self._udp.udp_write(packet_data)
 
     def receive_packet(self):
         packet_data, address, port = self._udp.udp_read()
@@ -129,6 +205,20 @@ class Communication:
         if not self._deduplication_manager.nonce(deduplication_nonce):
             return None
         
+        if self._packet_splits:
+            if len(data) < 2:
+                loguru.logger.warning("Received split packet with invalid length, discarding")
+                return None
+            part_index = data[0]
+            total_parts = data[1]
+            part_data = data[2:]  # strip part index and total parts
+
+            assembled_data = self._packet_splitter.add_part_and_assemble(
+                deduplication_nonce, part_index, total_parts, part_data)
+            if assembled_data is None:
+                return None  # not all parts received yet
+            data = assembled_data
+
         data = self._crypto.decrypt(data)
         if not data:
             return None

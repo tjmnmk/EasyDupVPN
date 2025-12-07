@@ -190,7 +190,17 @@ class ConfigChecks:
         except ValueError as e:
             loguru.logger.error(f"CIDR validation error: {e}")
             return False
-
+        
+    @staticmethod
+    def validate_vpn_data_max_size_split(size):
+        if not isinstance(size, int):
+            loguru.logger.error(f"VPN_DATA_MAX_SIZE_SPLIT must be an integer, got {type(size).__name__}")
+            return False
+        
+        if size < 0 or size > 9000:
+            return False
+        
+        return True
 
 @singleton
 class Config:
@@ -508,3 +518,12 @@ class Config:
             raise exceptions.ConfigError("ADD_ROUTES_PEER_IPV6 must be a valid IPv6 address")
         
         return peer_tun_ipv6
+
+    def get_vpn_data_max_size_split(self):
+        max_size = self._get_value("VPN_DATA_MAX_SIZE_SPLIT", default=0, log_level="info")
+
+        if not ConfigChecks.validate_vpn_data_max_size_split(max_size):
+            loguru.logger.error("Invalid VPN_DATA_MAX_SIZE_SPLIT in configuration")
+            raise exceptions.ConfigError("Invalid VPN_DATA_MAX_SIZE_SPLIT in configuration")
+        
+        return max_size
