@@ -14,6 +14,18 @@ class MainWorker:
     def __init__(self):
         self.communication_i = communication.Communication()
         self.tun_i = tun.Tun()
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Called automatically when leaving 'with' block"""
+        loguru.logger.info("Cleaning up...")
+        try:
+            self.tun_i.close()
+        except Exception as e:
+            loguru.logger.error(f"Error during cleanup: {e}")
+        return False  # Don't suppress exceptions
         
     def run(self):   
         tun_fd = self.tun_i.fileno()
@@ -60,7 +72,8 @@ def main():
     nice_level = config.Config().get_nice_level()
     nice_process(nice_level)
     
-    MainWorker().run()
+    with MainWorker() as worker:
+        worker.run()
 
 if __name__ == "__main__":
     main()

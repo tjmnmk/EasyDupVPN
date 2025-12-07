@@ -181,7 +181,16 @@ class ConfigChecks:
             return False
         
         return True
-        
+    
+    @staticmethod
+    def ip_cidr_valid(cidr):
+        try:
+            ipaddress.ip_network(cidr, strict=False)
+            return True
+        except ValueError as e:
+            loguru.logger.error(f"CIDR validation error: {e}")
+            return False
+
 
 @singleton
 class Config:
@@ -450,3 +459,52 @@ class Config:
             raise exceptions.ConfigError("COMPRESSION must be a boolean (true/false)")
         
         return compression
+    
+    def get_default_route(self):
+        default_route = self._get_value("DEFAULT_ROUTE", default=False, log_level="info")
+
+        if not ConfigChecks.validate_bool(default_route):
+            loguru.logger.error("DEFAULT_ROUTE must be a boolean (true/false)")
+            raise exceptions.ConfigError("DEFAULT_ROUTE must be a boolean (true/false)")
+        
+        return default_route
+    
+    def get_routes(self):
+        try:
+            routes = self._settings["ROUTES"]
+        except KeyError:
+            loguru.logger.info("ROUTES not set in configuration, no routes to add")
+            return []
+        
+        if not isinstance(routes, list):
+            loguru.logger.error("ROUTES must be a list in configuration")
+            raise exceptions.ConfigError("ROUTES must be a list in configuration")
+        
+        for route in routes:
+            if not ConfigChecks.ip_cidr_valid(route):
+                loguru.logger.error(f"Invalid route {route} in ROUTES configuration")
+                raise exceptions.ConfigError(f"Invalid route {route} in ROUTES configuration")
+        
+        return routes
+    
+    def get_add_routes_peer_ipv4(self):
+        peer_tun_ipv4 = self._get_value("ADD_ROUTES_PEER_IPV4", default=None, log_level="info")
+        if not peer_tun_ipv4 and len(self.get_routes()) == 0 and not self.get_default_route():
+            return None
+
+        if not ConfigChecks.check_ipv4_valid(peer_tun_ipv4):
+            loguru.logger.error("ADD_ROUTES_PEER_IPV4 must be a valid IPv4 address")
+            raise exceptions.ConfigError("ADD_ROUTES_PEER_IPV4 must be a valid IPv4 address")
+        
+        return peer_tun_ipv4
+    
+    def get_add_routes_peer_ipv6(self):
+        peer_tun_ipv6 = self._get_value("ADD_ROUTES_PEER_IPV6", default=None, log_level="info")
+        if not peer_tun_ipv6 and len(self.get_routes()) == 0 and not self.get_default_route():
+            return None
+
+        if not ConfigChecks.check_ipv6_valid(peer_tun_ipv6):
+            loguru.logger.error("ADD_ROUTES_PEER_IPV6 must be a valid IPv6 address")
+            raise exceptions.ConfigError("ADD_ROUTES_PEER_IPV6 must be a valid IPv6 address")
+        
+        return peer_tun_ipv6

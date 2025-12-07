@@ -168,6 +168,24 @@ class UDP:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        
+        # Increase send buffer for better throughput with packet duplication
+        send_buffer_size = 8 * 1024 * 1024  # 8 MB
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, send_buffer_size)
+        except Exception as e:
+            loguru.logger.warning(f"Failed to set UDP send buffer size: {e}")
+        actual_sndbuf = sock.getsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF)
+        loguru.logger.info(f"UDP send buffer size: {actual_sndbuf} bytes")
+        
+        # Also increase receive buffer
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, send_buffer_size)
+        except Exception as e:
+            loguru.logger.warning(f"Failed to set UDP receive buffer size: {e}")
+        actual_rcvbuf = sock.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+        loguru.logger.info(f"UDP receive buffer size: {actual_rcvbuf} bytes")
+        
         sock.bind((self._host, self._port))
         return sock
     
@@ -204,7 +222,7 @@ class UDP:
             self._sock.sendto(packet_data, (self._peer_host, self._peer_port))
         except Exception as e:
             loguru.logger.error(f"Failed to send UDP packet: {e}")
-            
+
     def fileno(self):
         return self._sock.fileno()
     

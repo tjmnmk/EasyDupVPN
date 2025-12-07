@@ -32,5 +32,15 @@
   "_comment_COMPRESSION": ["Set to true to enable compression (both peers must use the same setting)",
                           "Compression can improve throughput on slow or congested networks,",
                           "but increases CPU usage and adds latency.",
-                          "Zlib compression is used - level 6." ] 
+                          "Zlib compression is used - level 6." ],
+  "ADD_ROUTES": [],
+  "_comment_ADD_ROUTES": ["List of additional routes to add when the VPN is started.",
+                         "Each route is specified as a string in CIDR notation, e.g., \"192.168.1.0/24\" or \"fd00::/64\".",
+                         "Don't add 0.0.0.0/0 or ::/0 here (it can block traffic to the peer) - use DEFAULT_ROUTE setting instead."],
+  "DEFAULT_ROUTE": false,
+  "_comment_DEFAULT_ROUTE": "Set to true to route all traffic through the VPN",
+  "ADD_ROUTES_PEER_IPV4": "10.0.0.2",
+  "_comment_ADD_ROUTES_PEER_IPV4": "When using ADD_ROUTES, set this to the IPv4 TUN address of the peer",
+  "ADD_ROUTES_PEER_IPV6": "fd00::2",
+  "_comment_ADD_ROUTES_PEER_IPV6": "When using ADD_ROUTES, set this to the IPv6 TUN address of the peer"
 }

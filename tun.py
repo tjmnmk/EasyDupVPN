@@ -18,8 +18,76 @@ class Tun():
         self._ipv6_address = config.Config().get_tun_address_ipv6()
         self._ipv6_netmask = config.Config().get_tun_netmask_ipv6()
         self._tun = self._tun_open(self._device)
+        
+        self._baked_route_removes = []
 
         self._configure_tun_interface()
+        if config.Config().get_default_route():
+            self._add_default_route()
+        self._add_routes(config.Config().get_routes())
+
+    def _add_routes(self, routes):
+        peer4 = config.Config().get_add_routes_peer_ipv4()
+        peer6 = config.Config().get_add_routes_peer_ipv6()
+        for route in routes:
+            loguru.logger.info(f"Adding route {route} via TUN interface {self._device}")
+            if ':' in route:
+                # IPv6 route
+                try:
+                    sh.ip('-6', 'route', 'add', route, 'via', peer6, 'dev', self._device)
+                    remove_cmd = sh.ip.bake('-6', 'route', 'del', route, 'via', peer6, 'dev', self._device)
+                    self._baked_route_removes.append(remove_cmd)
+                except sh.ErrorReturnCode as e:
+                    if e.exit_code != 2: # if err == 2 then route already exists
+                        loguru.logger.error(f"Failed to add IPv6 route {route}: {e}")
+            else:
+                # IPv4 route
+                try:
+                    sh.ip('route', 'add', route, 'via', peer4, 'dev', self._device)
+                    remove_cmd = sh.ip.bake('route', 'del', route, 'via', peer4, 'dev', self._device)
+                    self._baked_route_removes.append(remove_cmd)
+                except sh.ErrorReturnCode as e:
+                    if e.exit_code != 2: # if err == 2 then route already exists
+                        loguru.logger.error(f"Failed to add IPv4 route {route}: {e}")
+
+    def _add_default_route(self):
+        # keep peer route
+        peer_ip = config.Config().get_peer_address()
+        peer_gw = self._linux_get_route_for_destination(peer_ip)
+        if peer_gw is None:
+            loguru.logger.error(f"Cannot determine gateway for peer {peer_ip}, not adding default route")
+            return
+        if peer_gw != "skip":
+            try:
+                sh.ip('route', 'add', peer_ip, 'via', peer_gw)
+                remove_cmd = sh.ip.bake('route', 'del', peer_ip, 'via', peer_gw)
+                self._baked_route_removes.append(remove_cmd)
+            except sh.ErrorReturnCode as e:
+                # if err == 2 then route already exists
+                if e.exit_code != 2:
+                    loguru.logger.error(f"Failed to add route to peer {peer_ip} via {peer_gw}: {e}")
+
+        loguru.logger.info(f"Adding default route via TUN interface {self._device}")
+        
+        routes = ("0.0.0.0/1", "128.0.0.0/1", "::/1", "8000::/1")
+        self._add_routes(routes)
+
+    def _linux_get_route_for_destination(self, destination_ip):
+        try:
+            output = sh.ip('route', 'get', destination_ip)
+        except sh.ErrorReturnCode as e:
+            loguru.logger.error(f"Failed to get route for {destination_ip}: {e}")
+            return None
+        
+        if output.find("via") == -1:
+            loguru.logger.info(f"No route found for {destination_ip}, probably local network, skipping adding peer route")
+            return "skip"
+        
+        parts = output.split()
+        via_index = parts.index("via")
+        gateway_ip = parts[via_index + 1]
+
+        return gateway_ip
 
     def _configure_tun_interface(self):
         loguru.logger.info(f"Configuring TUN interface {self._device} with MTU {self._mtu}")
@@ -75,13 +143,29 @@ class Tun():
             loguru.logger.error(f"Error writing to TUN device: {e}")
             return None
     
-    def _close(self):
+    def close(self):
+        loguru.logger.info("Cleaning up TUN device and routes...")
+        for cmd in self._baked_route_removes:
+            try:
+                cmd()
+            except sh.ErrorReturnCode as e:
+                loguru.logger.debug(f"Failed to remove route during cleanup: {e}")
+
         loguru.logger.debug("Closing TUN device")
-        self._tun.close()
+        try:
+            self._tun.close()
+        except Exception as e:
+            loguru.logger.debug(f"Error closing TUN device: {e}")
 
         loguru.logger.info(f"Deleting TUN interface {self._device}")
-        sh.ip('link', 'set', 'dev', self._device, 'down')
-        sh.ip('tuntap', 'del', 'dev', self._device, 'mode', 'tun')
+        try:
+            sh.ip('link', 'set', 'dev', self._device, 'down')
+        except sh.ErrorReturnCode as e:
+            loguru.logger.debug(f"Failed to bring down TUN interface {self._device}tr: {e}")
+        try:
+            sh.ip('tuntap', 'del', 'dev', self._device, 'mode', 'tun')
+        except sh.ErrorReturnCode as e:
+            loguru.logger.debug(f"Failed to delete TUN interface {self._device}: {e}")  
 
     def fileno(self):
         return self._tun.fileno()

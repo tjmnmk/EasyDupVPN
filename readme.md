@@ -100,6 +100,10 @@ cp config.example.json config.json
 | `NICE_LEVEL` | Process priority (-20 to 19, lower = higher priority, default: 0) |
 | `PROTOCOL_HEADER` | Add protocol identifier to packets (default: `true`). Set to `false` to make traffic harder to identify as VPN |
 | `COMPRESSION` | Enable zlib compression (default: `false`). Both peers must use the same setting |
+| `DEFAULT_ROUTE` | Route all traffic through VPN using 0/1 + 128/1 trick (default: `false`) |
+| `ADD_ROUTES` | Array of additional routes in CIDR notation (e.g., `["192.168.1.0/24", "10.0.0.0/8"]`) |
+| `ADD_ROUTES_PEER_IPV4` | IPv4 TUN address of the peer (gateway for ADD_ROUTES) |
+| `ADD_ROUTES_PEER_IPV6` | IPv6 TUN address of the peer (gateway for ADD_ROUTES) |
 
 ### PEER_LEARN Modes
 
@@ -152,7 +156,11 @@ sudo python3 easydupvpn.py config.json
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
   "PROTOCOL_HEADER": true,
-  "COMPRESSION": false
+  "COMPRESSION": false,
+  "DEFAULT_ROUTE": false,
+  "ADD_ROUTES": [],
+  "ADD_ROUTES_PEER_IPV4": "10.0.0.2",
+  "ADD_ROUTES_PEER_IPV6": "fd00::2"
 }
 ```
 
@@ -174,7 +182,11 @@ sudo python3 easydupvpn.py config.json
   "LOG_LEVEL": "INFO",
   "NICE_LEVEL": -10,
   "PROTOCOL_HEADER": true,
-  "COMPRESSION": false
+  "COMPRESSION": false,
+  "DEFAULT_ROUTE": false,
+  "ADD_ROUTES": [],
+  "ADD_ROUTES_PEER_IPV4": "10.0.0.1",
+  "ADD_ROUTES_PEER_IPV6": "fd00::1"
 }
 ```
 
