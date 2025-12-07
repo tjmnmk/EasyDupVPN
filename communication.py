@@ -2,6 +2,7 @@ import socket
 import loguru
 import random
 import time
+import os
 
 import config
 import const
@@ -90,7 +91,11 @@ class Communication:
             header = const.RAWUDPVPN_HEADER_START
         else:
             header = b''
-        header += random.randbytes(16) # 16 bytes for deduplication nonce
+        try:
+            dedup_nonce = random.randbytes(16) # 16 bytes for deduplication nonce
+        except AttributeError:
+            dedup_nonce = os.urandom(16)
+        header += dedup_nonce # add deduplication nonce
 
         return header
 
