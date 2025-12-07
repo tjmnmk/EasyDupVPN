@@ -161,7 +161,7 @@ class Communication:
         - 1 byte number of index of this part (optional) - when packet is split
         - 1 byte number of total parts (optional) - when packet is split
         """
-        if self._part is not None:
+        if part is not None:
             assert(total_parts)
             assert(dedup_nonce)
 
