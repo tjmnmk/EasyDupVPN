@@ -151,7 +151,7 @@ class Communication:
             dedup_nonce = random.randbytes(16) # 16 bytes for deduplication nonce
         except AttributeError:
             dedup_nonce = os.urandom(16)
-        return
+        return dedup_nonce
 
     def create_header(self, part=None, total_parts=None, dedup_nonce=None):
         """
