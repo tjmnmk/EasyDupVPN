@@ -4,6 +4,8 @@ import sys
 import loguru
 import select
 import psutil
+import os
+import traceback
 
 import communication
 import config
@@ -25,11 +27,32 @@ class MainWorker:
             self.tun_i.close()
         except Exception as e:
             loguru.logger.error(f"Error during cleanup: {e}")
-        return False  # Don't suppress exceptions
+        try:
+            exit_command = config.Config().get_run_command_on_exit()
+            if exit_command:
+                loguru.logger.info(f"Running exit command: {exit_command}")
+                ret_code = os.system(exit_command)
+                if ret_code != 0:
+                    loguru.logger.error(f"Exit command exited with code {ret_code}")
+                else:
+                    loguru.logger.info(f"Exit command exited with code {ret_code}")
+        except Exception as e:
+            loguru.logger.error(f"Error running exit command: {e}")
+        return False
         
     def run(self):   
         tun_fd = self.tun_i.fileno()
         comm_fd = self.communication_i.fileno()
+
+        # Run command after TUN is ready
+        setup_command = config.Config().get_run_command_after_tun_ready()
+        if setup_command:
+            loguru.logger.info(f"Running setup command: {setup_command}")
+            ret_code = os.system(setup_command)
+            if ret_code != 0:
+                loguru.logger.error(f"Setup command exited with code {ret_code}")
+            else:
+                loguru.logger.info(f"Setup command exited with code {ret_code}")
 
         while True:
             # Use 0.1 second (100ms) timeout to allow delayed packet checking
@@ -80,4 +103,16 @@ def main():
         worker.run()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    # Catch keyboard interrupt to allow graceful exit
+    except KeyboardInterrupt:
+        loguru.logger.info("Received keyboard interrupt, exiting...")
+        sys.exit(0)
+    # Catch sigterm
+    except SystemExit:
+        loguru.logger.info("Received termination signal, exiting...")
+        sys.exit(0)
+    except Exception as e:
+        loguru.logger.exception(f"Unhandled exception in main: {e}")
+        raise

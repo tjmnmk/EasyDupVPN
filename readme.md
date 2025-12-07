@@ -106,6 +106,8 @@ cp config.example.json config.json
 | `ADD_ROUTES` | Array of additional routes in CIDR notation (e.g., `["192.168.1.0/24", "10.0.0.0/8"]`) |
 | `ADD_ROUTES_PEER_IPV4` | IPv4 TUN address of the peer (gateway for ADD_ROUTES) |
 | `ADD_ROUTES_PEER_IPV6` | IPv6 TUN address of the peer (gateway for ADD_ROUTES) |
+| `RUN_COMMAND_AFTER_TUN_READY` | Shell command to execute after TUN device is ready (e.g., firewall rules, DNS changes). **⚠️ Runs as root** (default: "") |
+| `RUN_COMMAND_ON_EXIT` | Shell command to execute on exit (e.g., restore firewall, DNS). **⚠️ Runs as root** (default: "") |
 
 ### PEER_LEARN Modes
 
@@ -166,7 +168,9 @@ sudo python3 easydupvpn.py config.json
   "DEFAULT_ROUTE": false,
   "ADD_ROUTES": [],
   "ADD_ROUTES_PEER_IPV4": "10.0.0.2",
-  "ADD_ROUTES_PEER_IPV6": "fd00::2"
+  "ADD_ROUTES_PEER_IPV6": "fd00::2",
+  "RUN_COMMAND_AFTER_TUN_READY": "",
+  "RUN_COMMAND_ON_EXIT": ""
 }
 ```
 
@@ -196,7 +200,9 @@ sudo python3 easydupvpn.py config.json
   "DEFAULT_ROUTE": false,
   "ADD_ROUTES": [],
   "ADD_ROUTES_PEER_IPV4": "10.0.0.1",
-  "ADD_ROUTES_PEER_IPV6": "fd00::1"
+  "ADD_ROUTES_PEER_IPV6": "fd00::1",
+  "RUN_COMMAND_AFTER_TUN_READY": "",
+  "RUN_COMMAND_ON_EXIT": ""
 }
 ```
 
@@ -208,9 +214,10 @@ sudo python3 easydupvpn.py config.json
 4. A random nonce is prepended for deduplication (for split packets, base nonce + part index ensures unique nonces)
 5. Protocol header and part metadata (if splitting) are added
 6. The packet is sent `NUMBER_OF_DUPLICATES` times over UDP
-7. On the receiving end, duplicate packets are detected and discarded using the nonce
-8. Split packets are reassembled after decryption (with 15-second timeout for incomplete packets)
-9. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
+7. If `SEND_EXTRA_DELAYED_PACKET_AFTER` is enabled, one additional duplicate is scheduled for delayed sending
+8. On the receiving end, duplicate packets are detected and discarded using the nonce
+9. Split packets are reassembled after decryption (with 15-second timeout for incomplete packets)
+10. The decrypted packet is decompressed (if compression enabled) and written to the TUN interface
 
 ## Running as a Service
 

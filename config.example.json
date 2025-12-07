@@ -51,5 +51,11 @@
   "ADD_ROUTES_PEER_IPV4": "10.0.0.2",
   "_comment_ADD_ROUTES_PEER_IPV4": "When using ADD_ROUTES, set this to the IPv4 TUN address of the peer",
   "ADD_ROUTES_PEER_IPV6": "fd00::2",
-  "_comment_ADD_ROUTES_PEER_IPV6": "When using ADD_ROUTES, set this to the IPv6 TUN address of the peer"
+  "_comment_ADD_ROUTES_PEER_IPV6": "When using ADD_ROUTES, set this to the IPv6 TUN address of the peer",
+  "RUN_COMMAND_AFTER_TUN_READY": "",
+  "_comment_RUN_COMMAND_AFTER_TUN_READY": [ "Command to run after TUN device is ready (e.g., to change firewall, or resolv.conf)",
+                                            "Use with CAUTION - command is run as root."],
+  "RUN_COMMAND_ON_EXIT": "",
+  "_comment_RUN_COMMAND_ON_EXIT": [ "Command to run on exit (e.g., to restore firewall, or resolv.conf)",
+                                   "Use with CAUTION - command is run as root."]
 }

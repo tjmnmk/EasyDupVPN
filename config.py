@@ -541,3 +541,21 @@ class Config:
         
         return float(delay)
     
+    def get_run_command_after_tun_ready(self):
+        command = self._get_value("RUN_COMMAND_AFTER_TUN_READY", default="", log_level="info")
+        if not isinstance(command, str):
+            loguru.logger.error("RUN_COMMAND_AFTER_TUN_READY must be a string")
+            raise exceptions.ConfigError("RUN_COMMAND_AFTER_TUN_READY must be a string")
+        
+        return command.strip()
+    
+    def get_run_command_on_exit(self):
+        command = self._get_value("RUN_COMMAND_ON_EXIT", default="", log_level="info")
+        if not isinstance(command, str):
+            loguru.logger.error("RUN_COMMAND_ON_EXIT must be a string")
+            raise exceptions.ConfigError("RUN_COMMAND_ON_EXIT must be a string")
+        
+        command = command.strip()
+        if not command:
+            return None
+        return command
