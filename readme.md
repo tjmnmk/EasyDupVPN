@@ -26,6 +26,26 @@ A simple UDP-based VPN that sends multiple copies of each packet to improve reli
 
 ## Installation
 
+### Arch Linux
+
+```bash
+sudo pacman -S python python-loguru python-sh python-pynacl python-psutil python-brotli
+```
+
+### Debian / Ubuntu
+
+```bash
+sudo apt install python3 python3-pip
+pip install -r requirements.txt
+```
+
+Or install system packages (may be older versions):
+```bash
+sudo apt install python3 python3-loguru python3-sh python3-nacl python3-psutil python3-brotli
+```
+
+### Using pip (any distro)
+
 ```bash
 pip install -r requirements.txt
 ```
