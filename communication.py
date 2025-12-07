@@ -63,6 +63,7 @@ class PacketSplitter:
         return common.split_string_to_chunks(data, self._max_size)
 
     def add_part_and_assemble(self, nonce, part_index, total_parts, part_data):
+        loguru.logger.debug(f"Received packet part {part_index + 1}/{total_parts} for nonce {nonce.hex()}")
         self._cleanup_iterations += 1
         if self._cleanup_iterations >= 1000:
             self.cleanup_old()
@@ -201,9 +202,6 @@ class Communication:
         
         deduplication_nonce = data[:16]
         data = data[16:] # strip deduplication nonce
-
-        if not self._deduplication_manager.nonce(deduplication_nonce):
-            return None
         
         if self._packet_splits:
             if len(data) < 2:
@@ -218,6 +216,9 @@ class Communication:
             if assembled_data is None:
                 return None  # not all parts received yet
             data = assembled_data
+
+        if not self._deduplication_manager.nonce(deduplication_nonce):
+            return None
 
         data = self._crypto.decrypt(data)
         if not data:
