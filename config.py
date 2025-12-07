@@ -224,8 +224,7 @@ class Config:
     def _check_for_unknown_settings(self):
         for key in self._settings.keys():
             if key not in const.CONFIG_KNOWN_VALUES and not key.startswith(const.CONFIG_COMMENTS_PREFIXES):
-                loguru.logger.error(f"Unknown configuration key: {key}")
-            raise exceptions.ConfigError(f"Unknown configuration key: {key}")
+                loguru.logger.warning(f"Unknown configuration key: {key}")
 
     def _get_value(self, config_key, default=None, required=False, log_level="info"):
         try:
