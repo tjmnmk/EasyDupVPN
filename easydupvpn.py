@@ -76,6 +76,10 @@ class MainWorker:
                     loguru.logger.debug(f"Writing packet of length {len(data)} from UDP to TUN")
                     self.tun_i.tun_write(data)
 
+def check_root():
+    if os.geteuid() != 0:
+        loguru.logger.warning("This program is not running as root. TUN device creation and network configuration will likely fail.")
+
 def nice_process(nice_level):
     try:
         p = psutil.Process()
@@ -85,6 +89,7 @@ def nice_process(nice_level):
         loguru.logger.warning(f"Failed to set process nice level: {e}")
 
 def main():
+    check_root()
     try:
         config_file = sys.argv[1]
     except IndexError:
